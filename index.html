@@ -2,9 +2,23 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Configuração de Viewport para impedir zoom acidental em inputs no mobile -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Iron Tracker - Plataforma de Musculação</title>
     
+    <!-- --- CONFIGURAÇÕES DE WEB APP (PWA) --- -->
+    <!-- Define a cor da barra de status no Android/Chrome -->
+    <meta name="theme-color" content="#020617">
+    <!-- Permite rodar como app em tela cheia no iOS -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <!-- Define o estilo da barra de status no iOS -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <!-- Título do ícone no iOS -->
+    <meta name="apple-mobile-web-app-title" content="Iron Tracker">
+    <!-- Ícone para a tela inicial (usando um link CDN de exemplo) -->
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2548/2548530.png">
+    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/2548/2548530.png">
+
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
@@ -43,6 +57,10 @@
             grid-template-columns: repeat(7, 1fr);
             gap: 4px;
         }
+        /* Ajuste para evitar o "bounce" do scroll no iOS */
+        body {
+            overscroll-behavior-y: none;
+        }
     </style>
 </head>
 <body class="bg-slate-950 text-slate-200">
@@ -56,13 +74,13 @@
             Dumbbell, User, Lock, Mail, ChevronRight, Plus, Activity, 
             LogOut, Trash2, Calendar as CalendarIcon, Trophy, CheckCircle, Sparkles, X, BrainCircuit,
             ChevronLeft, ChevronRight as ChevronRightIcon, Save, RefreshCw, CheckSquare, Square, Settings,
-            AlertTriangle, AlertCircle, KeyRound
+            AlertTriangle, AlertCircle
         } from 'https://esm.sh/lucide-react@0.263.1';
 
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
         import { 
             getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, 
-            signOut, onAuthStateChanged, updateProfile, sendPasswordResetEmail 
+            signOut, onAuthStateChanged, updateProfile 
         } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
         import { 
             getFirestore, collection, addDoc, onSnapshot, deleteDoc, 
