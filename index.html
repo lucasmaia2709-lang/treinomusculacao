@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iron Tracker - Plataforma de Musculação</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        slate: { 950: '#020617' }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- React e ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-200">
+    <div id="root"></div>
+
+    <script type="text/babel" data-type="module">
+        import React, { useState, useEffect } from 'https://esm.sh/react@18.2.0';
+        import { createRoot } from 'https://esm.sh/react-dom@18.2.0/client';
+        
+        // Importando date-fns via módulo ESM
+        import { format, addDays, differenceInCalendarDays } from 'https://esm.sh/date-fns@2.30.0';
+
+        import { 
+            Dumbbell, User, Lock, Mail, ChevronRight, Plus, Activity, 
+            LogOut, Trash2, Calendar as CalendarIcon, Trophy, CheckCircle, Sparkles, X, BrainCircuit,
+            ChevronLeft, ChevronRight as ChevronRightIcon, Save, RefreshCw, CheckSquare, Square, Settings,
+            AlertTriangle, AlertCircle
+        } from 'https://esm.sh/lucide-react@0.263.1';
+
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+        import { 
+            getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, 
+            signOut, onAuthStateChanged, updateProfile 
+        } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+        import { 
+            getFirestore, collection, addDoc, onSnapshot, deleteDoc, 
+            doc, query, serverTimestamp, setDoc, getDoc, writeBatch, where, getDocs
+        } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+
+        import { GoogleGenerativeAI } from "https://esm.sh/@google/generative-ai";
+
+        // --- CONFIGURAÇÕES ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyAL5ExV2HRYWyHJckfz0CDmPvGbZHILb9A",
+            authDomain: "appmusculacao.firebaseapp.com",
+            projectId: "appmusculacao",
+            storageBucket: "appmusculacao.firebasestorage.app",
+            messagingSenderId: "772582437666",
+            appId: "1:772582437666:web:28a9059a262ede1102ab7b",
+            measurementId: "G-0R76TXYTKW"
+        };
+
+        // A CHAVE AGORA É CARREGADA DO FIRESTORE, NÃO MAIS HARDCODED
+        // const GEMINI_API_KEY = "REMOVIDO"; 
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const APP_COLLECTION_PATH = 'users'; 
+
+        // Helper de Data para String YYYY-MM-DD local
+        const toDateString = (date) => {
+            const offset = date.getTimezoneOffset();
+            const localDate = new Date(date.getTime() - (offset*60*1000));
+            return localDate.toISOString().split('T')[0];
+        };
+
+        // --- COMPONENTES UI ---
+
+        const Input = ({ icon: Icon, label, disabled, ...props }) => (
+            <div className="mb-4">
+                {label && <label className="block text-xs text-slate-400 mb-1 ml-1">{label}</label>}
+                <div className="relative">
+                    {Icon && (
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <Icon className="h-5 w-5 text-emerald-500" />
+                        </div>
+                    )}
+                    <input
+                        {...props}
+                        disabled={disabled}
+                        className={`w-full ${Icon ? 'pl-10' : 'pl-4'} pr-4 py-3 bg-slate-800 border ${disabled ? 'border-slate-800 text-slate-500 cursor-not-allowed' : 'border-slate-700 text-white focus:border-emerald-500'} rounded-lg focus:outline-none placeholder-slate-400 transition-colors`}
+                    />
+                </div>
+            </div>
+        );
+
+        const Select = ({ label, options, disabled, ...props }) => (
+            <div className="mb-4">
+                {label && <label className="block text-xs text-slate-400 mb-1 ml-1">{label}</label>}
+                <select
+                    {...props}
+                    disabled={disabled}
+                    className={`w-full pl-4 pr-4 py-3 bg-slate-800 border ${disabled ? 'border-slate-800 text-slate-500 cursor-not-allowed' : 'border-slate-700 text-white focus:border-emerald-500'} rounded-lg focus:outline-none transition-colors appearance-none`}
+                >
+                    {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                </select>
+            </div>
+        );
+
+        const Button = ({ children, variant = 'primary', onClick, disabled, className = '', type="button" }) => {
+            const variants = {
+                primary: "bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-900/50",
+                secondary: "bg-slate-700 hover:bg-slate-600 text-white",
+                outline: "border-2 border-emerald-600 text-emerald-500 hover:bg-emerald-600/10",
+                danger: "bg-red-900/20 text-red-400 hover:bg-red-900/40 border border-red-900/50",
+                ai: "bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white shadow-lg shadow-purple-900/50"
+            };
+            return (
+                <button 
+                    type={type} onClick={onClick} disabled={disabled} 
+                    className={`w-full py-3 px-4 rounded-lg font-bold transition-all transform active:scale-95 flex items-center justify-center gap-2 ${variants[variant]} ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`}
+                >
+                    {children}
+                </button>
+            );
+        };
+
+        // --- CALENDÁRIO ---
+        function CalendarWidget({ workouts, selectedDate, onSelectDate }) {
+            const [currentMonth, setCurrentMonth] = useState(new Date());
+
+            const getDaysInMonth = (date) => new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+            const getFirstDayOfMonth = (date) => new Date(date.getFullYear(), date.getMonth(), 1).getDay();
+
+            const daysInMonth = getDaysInMonth(currentMonth);
+            const firstDay = getFirstDayOfMonth(currentMonth);
+            
+            const days = [];
+            for (let i = 0; i < firstDay; i++) days.push(null);
+            for (let i = 1; i <= daysInMonth; i++) days.push(new Date(currentMonth.getFullYear(), currentMonth.getMonth(), i));
+
+            // Helpers visuais
+            const getDayStatus = (date) => {
+                if (!date) return null;
+                const dateStr = toDateString(date);
+                const dayWorkouts = workouts.filter(w => w.date === dateStr);
+                
+                if (dayWorkouts.length === 0) return null; 
+                if (dayWorkouts.some(w => w.isRestDay)) return 'rest';
+
+                const allCompleted = dayWorkouts.every(w => w.completed);
+                const anySkipped = dayWorkouts.some(w => w.status === 'skipped');
+                
+                if (anySkipped) return 'skipped';
+                if (allCompleted) return 'completed';
+                return 'pending';
+            };
+
+            const isSameDay = (d1, d2) => toDateString(d1) === toDateString(d2);
+
+            return (
+                <div className="bg-slate-900 rounded-xl p-5 border border-slate-800 sticky top-24 shadow-xl">
+                    <div className="flex items-center justify-between mb-4 pb-4 border-b border-slate-800">
+                        <button onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))} className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-white"><ChevronLeft className="h-5 w-5" /></button>
+                        <h3 className="font-bold text-white capitalize">
+                            {currentMonth.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+                        </h3>
+                        <button onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1))} className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-white"><ChevronRightIcon className="h-5 w-5" /></button>
+                    </div>
+
+                    <div className="calendar-grid mb-2">
+                        {['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].map(d => <div key={d} className="text-center text-xs text-slate-500 font-bold py-1">{d}</div>)}
+                    </div>
+
+                    <div className="calendar-grid">
+                        {days.map((date, idx) => {
+                            if (!date) return <div key={`empty-${idx}`} className="h-8"></div>;
+                            
+                            const status = getDayStatus(date);
+                            const isSelected = isSameDay(date, selectedDate);
+                            const isToday = isSameDay(date, new Date());
+
+                            let bgClass = "hover:bg-slate-800 text-slate-300";
+                            let dotClass = "";
+
+                            if (isSelected) bgClass = "bg-emerald-600 text-white shadow-lg";
+                            else if (isToday) bgClass = "border border-emerald-500/50 text-emerald-400";
+                            
+                            if (status === 'completed') dotClass = "bg-emerald-400";
+                            else if (status === 'skipped') dotClass = "bg-red-500";
+                            else if (status === 'rest') dotClass = "bg-blue-400";
+                            else if (status === 'pending') dotClass = "bg-slate-500";
+
+                            return (
+                                <button key={idx} onClick={() => onSelectDate(date)} className={`h-8 w-8 rounded-full flex items-center justify-center text-sm transition-all relative mx-auto ${bgClass}`}>
+                                    {date.getDate()}
+                                    {status && !isSelected && <div className={`absolute bottom-0.5 w-1 h-1 rounded-full ${dotClass}`}></div>}
+                                </button>
+                            );
+                        })}
+                    </div>
+                     <div className="mt-4 pt-4 border-t border-slate-800 flex justify-center gap-4 text-[10px] text-slate-500">
+                        <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-emerald-400"></div> Feito</div>
+                        <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-slate-500"></div> Pendente</div>
+                        <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-red-500"></div> Incompleto</div>
+                    </div>
+                </div>
+            );
+        }
+
+        // --- APP ---
+
+        function App() {
+            const [user, setUser] = useState(null);
+            const [loading, setLoading] = useState(true);
+            const [workouts, setWorkouts] = useState([]);
+            const [selectedDate, setSelectedDate] = useState(new Date());
+            const [geminiApiKey, setGeminiApiKey] = useState(null); // Estado para a API Key
+            
+            // Auth
+            const [email, setEmail] = useState('');
+            const [password, setPassword] = useState('');
+            const [name, setName] = useState('');
+            const [error, setError] = useState('');
+            const [view, setView] = useState('login');
+
+            // Modais e Estados UI
+            const [showAiModal, setShowAiModal] = useState(false);
+            const [showProfileModal, setShowProfileModal] = useState(false);
+            const [isGenerating, setIsGenerating] = useState(false);
+            const [isShifting, setIsShifting] = useState(false);
+            const [isConfirmingReset, setIsConfirmingReset] = useState(false);
+            
+            const [aiFormData, setAiFormData] = useState({
+                idade: '', genero: 'Masculino', peso: '', altura: '',
+                objetivo: 'Hipertrofia', experiencia: 'Iniciante',
+                frequencia: '4x', tempo: '1 hora', limitacoes: '',
+                ciclo: 'ABC (Clássico)' // Padrão
+            });
+
+            // --- INICIALIZAÇÃO ---
+            useEffect(() => {
+                const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+                    setUser(currentUser);
+                    if (currentUser) {
+                        setView('dashboard');
+                        fetchUserProfile(currentUser.uid);
+                        fetchGeminiKey(); // Busca a chave apenas se logado
+                    } else setView('login');
+                    setLoading(false);
+                });
+                return () => unsubscribe();
+            }, []);
+
+            // Busca a chave API do Firestore
+            const fetchGeminiKey = async () => {
+                try {
+                    const docRef = doc(db, 'config', 'api_keys');
+                    const docSnap = await getDoc(docRef);
+                    if (docSnap.exists()) {
+                        setGeminiApiKey(docSnap.data().gemini);
+                    } else {
+                        console.warn("Documento de config da API não encontrado. Crie 'config/api_keys' no Firestore.");
+                    }
+                } catch (e) {
+                    console.error("Erro ao buscar chave API (verifique regras de segurança):", e);
+                }
+            };
+
+            useEffect(() => {
+                if (!user) return;
+                const collectionRef = collection(db, APP_COLLECTION_PATH, user.uid, 'workouts');
+                const q = query(collectionRef);
+                const unsubscribe = onSnapshot(q, (snapshot) => {
+                    const docs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    setWorkouts(docs);
+                });
+                return () => unsubscribe();
+            }, [user]);
+
+            // --- PERFIL ---
+            const fetchUserProfile = async (uid) => {
+                try {
+                    const docSnap = await getDoc(doc(db, APP_COLLECTION_PATH, uid, 'profile', 'main'));
+                    if (docSnap.exists()) setAiFormData(docSnap.data());
+                } catch (err) { console.error(err); }
+            };
+            const saveUserProfile = async (data) => {
+                if(!user) return;
+                await setDoc(doc(db, APP_COLLECTION_PATH, user.uid, 'profile', 'main'), data);
+            };
+
+            // --- LÓGICA DE AGENDA INTELIGENTE (SHIFT) ---
+            useEffect(() => {
+                if (workouts.length > 0 && !isShifting) {
+                    checkAndShiftSchedule();
+                }
+            }, [workouts]);
+
+            const checkAndShiftSchedule = async () => {
+                const todayStr = toDateString(new Date());
+                const pastPendingWorkouts = workouts.filter(w => 
+                    w.date < todayStr && !w.completed && w.status !== 'skipped' && !w.isRestDay
+                );
+
+                if (pastPendingWorkouts.length === 0) return;
+
+                setIsShifting(true);
+                try {
+                    const batch = writeBatch(db);
+                    const dates = pastPendingWorkouts.map(w => w.date).sort();
+                    const oldestDate = new Date(dates[0]);
+                    const todayDate = new Date(todayStr);
+                    const daysDiff = differenceInCalendarDays(todayDate, oldestDate);
+
+                    pastPendingWorkouts.forEach(w => {
+                        const ref = doc(db, APP_COLLECTION_PATH, user.uid, 'workouts', w.id);
+                        batch.update(ref, { status: 'skipped' });
+                    });
+
+                    const futureWorkouts = workouts.filter(w => w.date >= todayStr && !w.completed && w.status !== 'skipped');
+                    
+                    futureWorkouts.forEach(w => {
+                        const newDate = addDays(new Date(w.date), daysDiff);
+                        const ref = doc(db, APP_COLLECTION_PATH, user.uid, 'workouts', w.id);
+                        batch.update(ref, { date: toDateString(newDate) });
+                    });
+
+                    pastPendingWorkouts.forEach(w => {
+                        const newDate = addDays(new Date(w.date), daysDiff);
+                        const newRef = doc(collection(db, APP_COLLECTION_PATH, user.uid, 'workouts'));
+                        batch.set(newRef, {
+                            ...w, date: toDateString(newDate), status: 'pending', createdAt: serverTimestamp(), originalId: w.id
+                        });
+                    });
+
+                    await batch.commit();
+                } catch (err) { console.error("Erro ao reorganizar agenda:", err); } 
+                finally { setIsShifting(false); }
+            };
+
+            const toggleComplete = async (workout) => {
+                const ref = doc(db, APP_COLLECTION_PATH, user.uid, 'workouts', workout.id);
+                await setDoc(ref, { completed: !workout.completed, status: !workout.completed ? 'completed' : 'pending' }, { merge: true });
+            };
+
+            // --- RESET CICLO ---
+            const handleResetCycle = async () => {
+                const todayStr = toDateString(new Date());
+                const batch = writeBatch(db);
+                
+                // Pega todos os treinos de hoje para o futuro
+                const futureWorkouts = workouts.filter(w => w.date >= todayStr);
+                
+                if (futureWorkouts.length === 0) {
+                    alert("Você não tem treinos futuros para apagar.");
+                    setIsConfirmingReset(false);
+                    return;
+                }
+
+                futureWorkouts.forEach(w => {
+                    const ref = doc(db, APP_COLLECTION_PATH, user.uid, 'workouts', w.id);
+                    batch.delete(ref);
+                });
+
+                try {
+                    await batch.commit();
+                    setShowProfileModal(false);
+                    setIsConfirmingReset(false);
+                    alert("Ciclo encerrado com sucesso! Você pode criar um novo agora.");
+                } catch (err) {
+                    console.error("Erro ao resetar:", err);
+                    alert("Erro ao tentar resetar o ciclo.");
+                }
+            };
+
+            // --- GERADOR IA ---
+            const generateWorkoutPlan = async () => {
+                if (!geminiApiKey) {
+                    alert("Erro de Configuração: Chave da API Gemini não encontrada no banco de dados.\n\nVerifique se a coleção 'config/api_keys' existe no Firestore com o campo 'gemini'.");
+                    return;
+                }
+                
+                await saveUserProfile(aiFormData);
+                setIsGenerating(true);
+
+                try {
+                    const genAI = new GoogleGenerativeAI(geminiApiKey);
+                    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+
+                    // Definir estrutura do ciclo baseado na escolha
+                    let cyclePrompt = "";
+                    switch(aiFormData.ciclo) {
+                        case 'Push/Pull/Legs':
+                            cyclePrompt = `
+                            1. Push (Peito/Ombro/Tríceps)
+                            2. Pull (Costas/Bíceps)
+                            3. Legs (Pernas Completo)
+                            4. Descanso
+                            (Repete 1-4 continuamente)`;
+                            break;
+                        case 'Upper/Lower':
+                            cyclePrompt = `
+                            1. Upper (Superiores)
+                            2. Lower (Inferiores)
+                            3. Descanso
+                            4. Upper (Superiores)
+                            5. Lower (Inferiores)
+                            6. Descanso
+                            7. Descanso
+                            (Ciclo semanal)`;
+                            break;
+                        case 'Full Body 3x':
+                            cyclePrompt = `
+                            1. Full Body A
+                            2. Descanso
+                            3. Full Body B
+                            4. Descanso
+                            5. Full Body C
+                            6. Descanso
+                            7. Descanso`;
+                            break;
+                        default: // ABC Clássico
+                            cyclePrompt = `
+                            1. Peito e Tríceps
+                            2. Costas e Bíceps
+                            3. Pernas e Ombros
+                            4. Descanso (Rest Day)
+                            (Repete 1-4 continuamente)`;
+                    }
+
+                    const prompt = `
+                        Atue como Personal Trainer. Crie uma rotina de treino para 28 dias (4 semanas) seguindo ESTRITAMENTE este ciclo:
+                        ${cyclePrompt}
+
+                        Perfil do Aluno: ${aiFormData.objetivo}, ${aiFormData.experiencia}.
+                        Disponibilidade: ${aiFormData.frequencia}, ${aiFormData.tempo}.
+                        Limitações: ${aiFormData.limitacoes}.
+                        
+                        Retorne APENAS um JSON (array de objetos).
+                        Cada objeto representa um dia e deve ter:
+                        - "dayOffset": (int) 0 para hoje, 1 para amanhã... até 27.
+                        - "focus": (string) "Peito e Tríceps", "Push", "Descanso", etc.
+                        - "isRest": (boolean) true se for descanso.
+                        - "exercises": Array de objetos com "name", "sets", "reps", "weight". Se for descanso, array vazio.
+                    `;
+
+                    const result = await model.generateContent(prompt);
+                    const text = result.response.text().replace(/```json/g, '').replace(/```/g, '').trim();
+                    const plan = JSON.parse(text);
+
+                    const batch = writeBatch(db);
+                    const today = new Date();
+                    const todayStr = toDateString(today);
+                    
+                    const futureDocs = workouts.filter(w => w.date >= todayStr);
+                    futureDocs.forEach(w => batch.delete(doc(db, APP_COLLECTION_PATH, user.uid, 'workouts', w.id)));
+
+                    plan.forEach(day => {
+                        const date = addDays(today, day.dayOffset);
+                        const dateStr = toDateString(date);
+
+                        if (day.isRest) {
+                            const ref = doc(collection(db, APP_COLLECTION_PATH, user.uid, 'workouts'));
+                            batch.set(ref, {
+                                date: dateStr, isRestDay: true, exercise: "Descanso Regenerativo", focus: "Descanso",
+                                completed: false, status: 'pending', createdAt: serverTimestamp()
+                            });
+                        } else {
+                            day.exercises.forEach(ex => {
+                                const ref = doc(collection(db, APP_COLLECTION_PATH, user.uid, 'workouts'));
+                                batch.set(ref, {
+                                    date: dateStr, 
+                                    exercise: ex.name || "Exercício", 
+                                    sets: ex.sets || 3, 
+                                    reps: ex.reps || 10, 
+                                    weight: ex.weight || 0, // Fallback para 0 se undefined
+                                    focus: day.focus, 
+                                    completed: false, 
+                                    status: 'pending', 
+                                    isRestDay: false, 
+                                    isAiGenerated: true, 
+                                    createdAt: serverTimestamp()
+                                });
+                            });
+                        }
+                    });
+
+                    await batch.commit();
+                    setShowAiModal(false);
+                } catch (err) { console.error(err); alert("Erro ao gerar treino: " + err.message); } 
+                finally { setIsGenerating(false); }
+            };
+
+            const dateStr = toDateString(selectedDate);
+            const dailyWorkouts = workouts.filter(w => w.date === dateStr);
+            const isRestDay = dailyWorkouts.some(w => w.isRestDay);
+
+            // Verificação para mostrar botão de novo ciclo
+            const todayStr = toDateString(new Date());
+            const hasActivePlan = workouts.some(w => w.date >= todayStr);
+
+            // Auth Handlers
+            const handleLogin = async (e) => {
+                e.preventDefault();
+                setError('');
+                setLoading(true);
+                try {
+                    await signInWithEmailAndPassword(auth, email, password);
+                } catch (err) {
+                    // Suppress known auth errors from console to avoid alarming users
+                    if (err.code !== 'auth/invalid-credential' && err.code !== 'auth/user-not-found' && err.code !== 'auth/wrong-password') {
+                        console.error("Login Error:", err);
+                    }
+                    
+                    let msg = "Falha ao entrar. Tente novamente.";
+                    
+                    if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password') {
+                        msg = "E-mail ou senha incorretos.";
+                    } else if (err.code === 'auth/user-not-found') {
+                        msg = "Usuário não encontrado. Crie uma conta.";
+                    } else if (err.code === 'auth/invalid-email') {
+                        msg = "Formato de e-mail inválido.";
+                    } else if (err.code === 'auth/too-many-requests') {
+                        msg = "Muitas tentativas falhas. Tente mais tarde.";
+                    }
+                    
+                    setError(msg);
+                    setLoading(false);
+                }
+            };
+
+            const handleRegister = async (e) => {
+                e.preventDefault();
+                setError('');
+                setLoading(true);
+                try {
+                    const c = await createUserWithEmailAndPassword(auth, email, password);
+                    await updateProfile(c.user, { displayName: name });
+                } catch (err) {
+                    if (err.code !== 'auth/email-already-in-use') {
+                        console.error("Register Error:", err);
+                    }
+                    
+                    let msg = "Erro ao criar conta.";
+                    if (err.code === 'auth/email-already-in-use') {
+                        msg = "Este e-mail já está cadastrado.";
+                    } else if (err.code === 'auth/weak-password') {
+                        msg = "A senha deve ter pelo menos 6 caracteres.";
+                    }
+                    
+                    setError(msg);
+                    setLoading(false);
+                }
+            };
+
+            const handleLogout = async () => signOut(auth);
+
+            // Reusable Profile Form Content
+            const ProfileFormContent = ({ readOnly = false }) => (
+                <div className="space-y-4">
+                    <h4 className="text-sm font-bold text-purple-400 uppercase tracking-wider mb-2">1. Configuração do Ciclo</h4>
+                    <div className="bg-slate-800 p-3 rounded-lg border border-slate-700 mb-4">
+                        <Select 
+                            label="Tipo de Divisão (Ciclo)" 
+                            options={['ABC (Clássico)', 'Push/Pull/Legs', 'Upper/Lower', 'Full Body 3x']} 
+                            value={aiFormData.ciclo} 
+                            disabled={readOnly}
+                            onChange={e=>setAiFormData({...aiFormData, ciclo:e.target.value})} 
+                        />
+                        <p className="text-xs text-slate-500 mt-1">
+                            {aiFormData.ciclo === 'ABC (Clássico)' && "Peito/Tríceps, Costas/Bíceps, Perna/Ombros + Descanso."}
+                            {aiFormData.ciclo === 'Push/Pull/Legs' && "Empurrar, Puxar, Pernas + Descanso."}
+                            {aiFormData.ciclo === 'Upper/Lower' && "Superior, Inferior + Descanso (2x na semana)."}
+                            {aiFormData.ciclo === 'Full Body 3x' && "Corpo todo dia sim, dia não."}
+                        </p>
+                    </div>
+
+                    <h4 className="text-sm font-bold text-purple-400 uppercase tracking-wider mb-2">2. Perfil Básico</h4>
+                    <div className="grid grid-cols-2 gap-4">
+                        <Input label="Idade" value={aiFormData.idade} disabled={readOnly} onChange={e=>setAiFormData({...aiFormData, idade:e.target.value})} type="number" />
+                        <Select label="Gênero" options={['Masculino', 'Feminino', 'Outro']} value={aiFormData.genero} disabled={readOnly} onChange={e=>setAiFormData({...aiFormData, genero:e.target.value})} />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <Input label="Peso (kg)" type="number" value={aiFormData.peso} disabled={readOnly} onChange={e=>setAiFormData({...aiFormData, peso:e.target.value})} />
+                        <Input label="Altura (m)" type="number" value={aiFormData.altura} disabled={readOnly} onChange={e=>setAiFormData({...aiFormData, altura:e.target.value})} />
+                    </div>
+
+                    <h4 className="text-sm font-bold text-purple-400 uppercase tracking-wider mb-2 mt-6">3. Objetivo & Nível</h4>
+                    <Select label="Objetivo" options={['Hipertrofia', 'Emagrecimento', 'Força']} value={aiFormData.objetivo} disabled={readOnly} onChange={e=>setAiFormData({...aiFormData, objetivo:e.target.value})} />
+                    <Select label="Experiência" options={['Iniciante', 'Intermediário', 'Avançado']} value={aiFormData.experiencia} disabled={readOnly} onChange={e=>setAiFormData({...aiFormData, experiencia:e.target.value})} />
+
+                    <h4 className="text-sm font-bold text-purple-400 uppercase tracking-wider mb-2 mt-6">4. Disponibilidade</h4>
+                    <div className="grid grid-cols-2 gap-4">
+                        <Select label="Frequência" options={['3x', '4x', '5x', '6x']} value={aiFormData.frequencia} disabled={readOnly} onChange={e=>setAiFormData({...aiFormData, frequencia:e.target.value})} />
+                        <Select label="Tempo" options={['30 min', '45 min', '1 hora', '1h 30min']} value={aiFormData.tempo} disabled={readOnly} onChange={e=>setAiFormData({...aiFormData, tempo:e.target.value})} />
+                    </div>
+
+                    <h4 className="text-sm font-bold text-purple-400 uppercase tracking-wider mb-2 mt-6">5. Limitações</h4>
+                    <Input label="Limitações/Lesões" value={aiFormData.limitacoes} disabled={readOnly} onChange={e=>setAiFormData({...aiFormData, limitacoes:e.target.value})} placeholder="Ex: Joelho esquerdo" />
+                </div>
+            );
+
+            // --- RENDER ---
+            if (loading && !user) return <div className="min-h-screen bg-slate-950 flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-emerald-500"></div></div>;
+
+            if (!user) return (
+                <div className="min-h-screen bg-slate-950 flex flex-col justify-center items-center p-4 relative overflow-hidden">
+                    <div className="absolute top-[-10%] right-[-10%] w-96 h-96 bg-emerald-600/20 rounded-full blur-[100px]"></div>
+                    <div className="z-10 w-full max-w-md bg-slate-900/80 backdrop-blur-xl p-8 rounded-2xl border border-slate-800 animate-fade-in">
+                        <div className="flex justify-center mb-6"><div className="bg-emerald-500/10 p-4 rounded-full border border-emerald-500/20"><Dumbbell className="h-10 w-10 text-emerald-500" /></div></div>
+                        <h2 className="text-3xl font-bold text-center text-white mb-2">IRON <span className="text-emerald-500">TRACKER</span></h2>
+                        
+                        {error && (
+                            <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-3 rounded-lg mb-6 flex items-center gap-2 text-sm animate-pulse">
+                                <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                                {error}
+                            </div>
+                        )}
+
+                        <form onSubmit={view === 'login' ? handleLogin : handleRegister}>
+                            {view === 'register' && <Input icon={User} placeholder="Nome" value={name} onChange={e=>setName(e.target.value)} required />}
+                            <Input icon={Mail} type="email" placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)} required />
+                            <Input icon={Lock} type="password" placeholder="Senha" value={password} onChange={e=>setPassword(e.target.value)} required />
+                            <Button type="submit">{view === 'login' ? 'Entrar' : 'Cadastrar'}</Button>
+                        </form>
+                        <div className="mt-6 text-center">
+                             <div className="text-slate-500 text-sm">
+                                {view === 'login' ? 'Ainda não tem conta?' : 'Já tem uma conta?'}
+                                <button 
+                                    className="text-emerald-500 ml-1 font-bold hover:underline" 
+                                    onClick={()=>{setView(view==='login'?'register':'login'); setError('')}}
+                                >
+                                    {view==='login'?'Criar Conta':'Fazer Login'}
+                                </button>
+                             </div>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            return (
+                <div className="min-h-screen bg-slate-950 text-slate-200 font-sans relative">
+                    
+                    {/* MODAL IA (Criar Ciclo) */}
+                    {showAiModal && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+                            <div className="bg-slate-900 w-full max-w-lg rounded-2xl border border-slate-700 shadow-2xl flex flex-col max-h-[90vh]">
+                                <div className="p-6 border-b border-slate-800 flex justify-between items-center">
+                                    <h3 className="text-xl font-bold text-white flex gap-2"><Sparkles className="text-purple-400"/> Gerador de Ciclo</h3>
+                                    <button onClick={()=>setShowAiModal(false)}><X className="text-slate-400"/></button>
+                                </div>
+                                <div className="p-6 overflow-y-auto scrollbar-hide">
+                                    {isGenerating ? (
+                                        <div className="py-10 text-center"><div className="animate-spin rounded-full h-12 w-12 border-purple-500 border-t-2 mx-auto mb-4"></div><p>Montando ciclo de 4 semanas...</p></div>
+                                    ) : (
+                                        <ProfileFormContent readOnly={false} />
+                                    )}
+                                </div>
+                                {!isGenerating && <div className="p-6 border-t border-slate-800"><Button variant="ai" onClick={generateWorkoutPlan}>Gerar Ciclo</Button></div>}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* MODAL PERFIL (Leitura e Reset) */}
+                    {showProfileModal && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                            <div className="bg-slate-900 w-full max-w-lg rounded-2xl border border-slate-700 p-6 flex flex-col max-h-[90vh]">
+                                <div className="flex justify-between mb-4 flex-shrink-0"><h3 className="font-bold text-xl flex items-center gap-2"><User className="text-emerald-500"/> Meu Perfil</h3><button onClick={()=>{setShowProfileModal(false); setIsConfirmingReset(false);}}><X/></button></div>
+                                <div className="space-y-4 overflow-y-auto scrollbar-hide flex-grow mb-4">
+                                    <Input label="Nome" value={user.displayName || ''} disabled />
+                                    <ProfileFormContent readOnly={true} />
+                                </div>
+                                
+                                <div className="pt-4 border-t border-slate-800">
+                                    <h4 className="text-sm font-bold text-red-400 mb-2 flex items-center gap-2">
+                                        <AlertTriangle className="h-4 w-4"/> Zona de Perigo
+                                    </h4>
+                                    
+                                    {!isConfirmingReset ? (
+                                        <>
+                                            <p className="text-xs text-slate-500 mb-3">
+                                                Deseja mudar seu objetivo ou divisão? Encerre o ciclo atual para criar um novo. Seu histórico passado será salvo.
+                                            </p>
+                                            <Button variant="danger" onClick={() => setIsConfirmingReset(true)}>
+                                                Encerrar Ciclo Atual
+                                            </Button>
+                                        </>
+                                    ) : (
+                                        <div className="bg-red-900/10 p-3 rounded-lg border border-red-900/30 animate-fade-in">
+                                            <p className="text-sm text-red-300 font-bold mb-2">Tem certeza absoluta?</p>
+                                            <p className="text-xs text-red-400/80 mb-3">
+                                                Isso apagará todos os treinos agendados de hoje em diante. Esta ação não pode ser desfeita.
+                                            </p>
+                                            <div className="flex gap-2">
+                                                <Button variant="danger" onClick={handleResetCycle}>Sim, Encerrar</Button>
+                                                <Button variant="secondary" onClick={() => setIsConfirmingReset(false)}>Cancelar</Button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    <nav className="bg-slate-900 border-b border-slate-800 sticky top-0 z-20">
+                        <div className="max-w-4xl mx-auto px-4 py-4 flex justify-between items-center">
+                            <div className="flex items-center gap-2 font-bold text-xl">IRON<span className="text-emerald-500">TRACKER</span></div>
+                            <div className="flex gap-4">
+                                <button onClick={()=>setShowProfileModal(true)} className="flex items-center gap-2 text-sm font-bold hover:bg-slate-800 px-3 py-1 rounded-lg transition-colors">
+                                    {user.displayName || 'Atleta'} <User className="h-4 w-4 text-emerald-500"/>
+                                </button>
+                                <button onClick={handleLogout}><LogOut className="h-5 w-5 hover:text-red-400"/></button>
+                            </div>
+                        </div>
+                    </nav>
+
+                    <main className="max-w-4xl mx-auto px-4 py-8">
+                        {!hasActivePlan && (
+                            <div className="mb-8 bg-gradient-to-r from-emerald-900/40 to-slate-900 border border-emerald-500/20 rounded-2xl p-6 flex justify-between items-center animate-fade-in">
+                                <div>
+                                    <h1 className="text-2xl font-bold text-white">Painel de Controle</h1>
+                                    <p className="text-slate-400 text-sm mt-1">Nenhum ciclo ativo encontrado.</p>
+                                </div>
+                                <Button variant="ai" onClick={()=>setShowAiModal(true)} className="w-auto px-6"><Plus className="h-4 w-4"/> Novo Ciclo</Button>
+                            </div>
+                        )}
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div className="md:col-span-1">
+                                <CalendarWidget workouts={workouts} selectedDate={selectedDate} onSelectDate={setSelectedDate} />
+                            </div>
+
+                            <div className="md:col-span-2">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h3 className="font-bold flex items-center gap-2"><Activity className="h-5 w-5 text-emerald-500"/> Treino do Dia</h3>
+                                    <span className="text-xs bg-emerald-900/20 text-emerald-400 px-3 py-1 rounded-full border border-emerald-500/30 flex items-center gap-1">
+                                        <CalendarIcon className="h-3 w-3"/> {format(selectedDate, 'dd/MM')}
+                                    </span>
+                                </div>
+
+                                <div className="space-y-3">
+                                    {dailyWorkouts.length === 0 ? (
+                                        <div className="text-center py-12 bg-slate-900/30 rounded-xl border border-slate-800 border-dashed">
+                                            <CalendarIcon className="h-8 w-8 text-slate-600 mx-auto mb-2"/>
+                                            <p className="text-slate-300 font-bold">Sem Registro</p>
+                                            <p className="text-slate-500 text-sm">Nenhum plano para este dia.</p>
+                                        </div>
+                                    ) : isRestDay ? (
+                                        <div className="bg-blue-900/20 border border-blue-500/30 p-6 rounded-xl text-center">
+                                            <div className="bg-blue-500/20 p-4 rounded-full inline-block mb-3">
+                                                <Sparkles className="h-8 w-8 text-blue-400" />
+                                            </div>
+                                            <h3 className="text-xl font-bold text-blue-100">Dia de Descanso</h3>
+                                            <p className="text-blue-300 text-sm mt-2">Recupere-se para voltar mais forte amanhã!</p>
+                                            <div className="mt-4">
+                                                 <button onClick={()=>toggleComplete(dailyWorkouts[0])} className={`px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 mx-auto ${dailyWorkouts[0].completed ? 'bg-blue-500 text-white' : 'bg-slate-800 text-blue-400'}`}>
+                                                    {dailyWorkouts[0].completed ? <CheckCircle className="h-4 w-4"/> : <div className="w-4 h-4 border-2 border-current rounded-sm"/>}
+                                                    {dailyWorkouts[0].completed ? 'Descanso Registrado' : 'Confirmar Descanso'}
+                                                 </button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <span className="text-xs font-bold uppercase tracking-wider text-slate-500 bg-slate-900 px-2 py-1 rounded border border-slate-800">
+                                                    Foco: {dailyWorkouts[0].focus}
+                                                </span>
+                                            </div>
+                                            {dailyWorkouts.map(workout => (
+                                                <div key={workout.id} onClick={()=>toggleComplete(workout)} className={`p-4 rounded-xl border transition-all cursor-pointer flex items-center justify-between group ${workout.completed ? 'bg-emerald-900/10 border-emerald-500/30 opacity-70' : 'bg-slate-900 border-slate-800 hover:border-emerald-500/50'}`}>
+                                                    <div className="flex items-center gap-4">
+                                                        <div className={`h-6 w-6 rounded flex items-center justify-center transition-colors ${workout.completed ? 'bg-emerald-500 text-white' : 'bg-slate-800 border border-slate-600 text-transparent group-hover:border-emerald-500'}`}>
+                                                            <CheckCircle className="h-4 w-4" />
+                                                        </div>
+                                                        <div>
+                                                            <h4 className={`font-bold transition-colors ${workout.completed ? 'text-emerald-500 line-through' : 'text-white'}`}>{workout.exercise}</h4>
+                                                            <div className="flex gap-3 text-sm text-slate-400 mt-1">
+                                                                <span className="bg-slate-800 px-2 py-0.5 rounded text-xs"><span className="text-emerald-500 font-bold">{workout.sets}</span> Séries</span>
+                                                                <span className="bg-slate-800 px-2 py-0.5 rounded text-xs"><span className="text-emerald-500 font-bold">{workout.reps}</span> Reps</span>
+                                                                {workout.weight > 0 && <span className="bg-slate-800 px-2 py-0.5 rounded text-xs">{workout.weight}kg</span>}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </main>
+                </div>
+            );
+        }
+
+        const root = createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
