@@ -56,13 +56,13 @@
             Dumbbell, User, Lock, Mail, ChevronRight, Plus, Activity, 
             LogOut, Trash2, Calendar as CalendarIcon, Trophy, CheckCircle, Sparkles, X, BrainCircuit,
             ChevronLeft, ChevronRight as ChevronRightIcon, Save, RefreshCw, CheckSquare, Square, Settings,
-            AlertTriangle, AlertCircle
+            AlertTriangle, AlertCircle, KeyRound
         } from 'https://esm.sh/lucide-react@0.263.1';
 
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
         import { 
             getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, 
-            signOut, onAuthStateChanged, updateProfile 
+            signOut, onAuthStateChanged, updateProfile, sendPasswordResetEmail 
         } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
         import { 
             getFirestore, collection, addDoc, onSnapshot, deleteDoc, 
@@ -130,9 +130,7 @@
             );
         };
 
-        // --- COMPONENTE DE FORMULÁRIO (CORRIGIDO: MOVIDO PARA FORA DO APP) ---
-        // Ao definir aqui fora, o React não recria o componente a cada renderização do App,
-        // corrigindo o problema de perda de foco nos inputs.
+        // --- COMPONENTE DE FORMULÁRIO ---
         const ProfileFormContent = ({ formData, setFormData, readOnly = false }) => (
             <div className="space-y-4">
                 <h4 className="text-sm font-bold text-purple-400 uppercase tracking-wider mb-2">1. Configuração do Treino</h4>
@@ -250,7 +248,8 @@
             const [password, setPassword] = useState('');
             const [name, setName] = useState('');
             const [error, setError] = useState('');
-            const [view, setView] = useState('login');
+            const [successMsg, setSuccessMsg] = useState('');
+            const [view, setView] = useState('login'); // 'login', 'register', 'forgot'
 
             const [showAiModal, setShowAiModal] = useState(false);
             const [showProfileModal, setShowProfileModal] = useState(false);
@@ -271,7 +270,11 @@
                     if (currentUser) {
                         setView('dashboard');
                         fetchUserProfile(currentUser.uid);
-                    } else setView('login');
+                    } else {
+                        // Se view atual for dashboard, volta pra login. 
+                        // Se estiver em 'forgot' ou 'register', mantém pra não frustrar o usuário.
+                        if (view === 'dashboard') setView('login');
+                    }
                     setLoading(false);
                 });
                 return () => unsubscribe();
@@ -417,7 +420,7 @@
                                     exercise: ex.name || "Exercício", 
                                     sets: ex.sets || 3, 
                                     reps: ex.reps || 10,
-                                    // Peso removido conforme solicitado
+                                    weight: ex.weight || 0, 
                                     focus: day.focus, 
                                     completed: false, 
                                     status: 'pending', 
@@ -472,6 +475,32 @@
                     setError(msg); setLoading(false);
                 }
             };
+
+            // Nova função: Esqueci a Senha
+            const handleForgotPassword = async (e) => {
+                e.preventDefault();
+                if (!email) {
+                    setError("Digite seu e-mail para recuperar a senha.");
+                    return;
+                }
+                setError('');
+                setSuccessMsg('');
+                setLoading(true);
+                try {
+                    await sendPasswordResetEmail(auth, email);
+                    setSuccessMsg("E-mail de recuperação enviado! Verifique sua caixa de entrada.");
+                    setTimeout(() => setView('login'), 5000); // Volta pro login após 5s
+                } catch (err) {
+                    console.error("Reset Password Error:", err);
+                    let msg = "Erro ao enviar e-mail.";
+                    if (err.code === 'auth/user-not-found') msg = "E-mail não cadastrado.";
+                    if (err.code === 'auth/invalid-email') msg = "E-mail inválido.";
+                    setError(msg);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
             const handleLogout = async () => signOut(auth);
 
             // --- RENDER ---
@@ -483,21 +512,62 @@
                     <div className="z-10 w-full max-w-md bg-slate-900/80 backdrop-blur-xl p-8 rounded-2xl border border-slate-800 animate-fade-in">
                         <div className="flex justify-center mb-6"><div className="bg-emerald-500/10 p-4 rounded-full border border-emerald-500/20"><Dumbbell className="h-10 w-10 text-emerald-500" /></div></div>
                         <h2 className="text-3xl font-bold text-center text-white mb-2">IRON <span className="text-emerald-500">TRACKER</span></h2>
+                        
+                        {/* Mensagem de Erro ou Sucesso */}
                         {error && (
                             <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-3 rounded-lg mb-6 flex items-center gap-2 text-sm animate-pulse">
                                 <AlertCircle className="h-4 w-4 flex-shrink-0" /> {error}
                             </div>
                         )}
-                        <form onSubmit={view === 'login' ? handleLogin : handleRegister}>
+                        {successMsg && (
+                            <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 p-3 rounded-lg mb-6 flex items-center gap-2 text-sm animate-pulse">
+                                <CheckCircle className="h-4 w-4 flex-shrink-0" /> {successMsg}
+                            </div>
+                        )}
+
+                        {/* Formulário Dinâmico */}
+                        <form onSubmit={view === 'login' ? handleLogin : view === 'register' ? handleRegister : handleForgotPassword}>
+                            
+                            {/* Título da tela */}
+                            <h3 className="text-xl font-semibold text-white mb-4 text-center">
+                                {view === 'login' ? 'Acesse sua conta' : view === 'register' ? 'Crie sua conta' : 'Recuperar Senha'}
+                            </h3>
+
                             {view === 'register' && <Input icon={User} placeholder="Nome" value={name} onChange={e=>setName(e.target.value)} required />}
+                            
                             <Input icon={Mail} type="email" placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)} required />
-                            <Input icon={Lock} type="password" placeholder="Senha" value={password} onChange={e=>setPassword(e.target.value)} required />
-                            <Button type="submit">{view === 'login' ? 'Entrar' : 'Cadastrar'}</Button>
+                            
+                            {view !== 'forgot' && (
+                                <div className="mb-4">
+                                    <Input icon={Lock} type="password" placeholder="Senha" value={password} onChange={e=>setPassword(e.target.value)} required />
+                                    {view === 'login' && (
+                                        <div className="flex justify-end mt-1">
+                                            <button 
+                                                type="button"
+                                                className="text-xs text-slate-400 hover:text-emerald-400 transition-colors"
+                                                onClick={() => { setView('forgot'); setError(''); setSuccessMsg(''); }}
+                                            >
+                                                Esqueci minha senha
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            <Button type="submit" disabled={loading}>
+                                {loading ? 'Processando...' : view === 'login' ? 'Entrar' : view === 'register' ? 'Cadastrar' : 'Enviar Link de Recuperação'}
+                            </Button>
                         </form>
+
                         <div className="mt-6 text-center">
                              <div className="text-slate-500 text-sm">
-                                {view === 'login' ? 'Ainda não tem conta?' : 'Já tem uma conta?'}
-                                <button className="text-emerald-500 ml-1 font-bold hover:underline" onClick={()=>{setView(view==='login'?'register':'login'); setError('')}}>{view==='login'?'Criar Conta':'Fazer Login'}</button>
+                                {view === 'login' ? 'Ainda não tem conta?' : view === 'register' ? 'Já tem uma conta?' : 'Lembrou sua senha?'}
+                                <button 
+                                    className="text-emerald-500 ml-1 font-bold hover:underline" 
+                                    onClick={()=>{setView(view==='login'?'register':'login'); setError(''); setSuccessMsg('');}}
+                                >
+                                    {view==='login'?'Criar Conta':'Fazer Login'}
+                                </button>
                              </div>
                         </div>
                     </div>
