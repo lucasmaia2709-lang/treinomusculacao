@@ -2,95 +2,71 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <!-- Configuração de Viewport para impedir zoom acidental em inputs no mobile -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Iron Tracker - Plataforma de Musculação</title>
     
-    <!-- --- CONFIGURAÇÕES DE WEB APP (PWA) --- -->
-    <!-- Define a cor da barra de status no Android/Chrome -->
+    <!-- PWA Config -->
     <meta name="theme-color" content="#020617">
-    <!-- Permite rodar como app em tela cheia no iOS -->
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <!-- Define o estilo da barra de status no iOS -->
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <!-- Título do ícone no iOS -->
-    <meta name="apple-mobile-web-app-title" content="Iron Tracker">
-    <!-- Ícone para a tela inicial (usando um link CDN de exemplo) -->
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2548/2548530.png">
     <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/2548/2548530.png">
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
     <script>
         tailwind.config = {
             theme: {
                 extend: {
-                    colors: {
-                        slate: { 950: '#020617' }
+                    colors: { slate: { 950: '#020617', 900: '#0f172a', 800: '#1e293b' }, emerald: { 450: '#10b981' } },
+                    animation: { 'fade-in': 'fadeIn 0.3s ease-out forwards', 'slide-up': 'slideUp 0.4s ease-out' },
+                    keyframes: {
+                        fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
+                        slideUp: { '0%': { transform: 'translateY(20px)', opacity: '0' }, '100%': { transform: 'translateY(0)', opacity: '1' } }
                     }
                 }
             }
         }
     </script>
 
-    <!-- React e ReactDOM -->
+    <!-- React Dependencies -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    
-    <!-- Babel -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
     <style>
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-fade-in {
-            animation: fadeIn 0.5s ease-out forwards;
-        }
-        .scrollbar-hide::-webkit-scrollbar {
-            display: none;
-        }
-        .calendar-grid {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 4px;
-        }
-        /* Ajuste para evitar o "bounce" do scroll no iOS */
-        body {
-            overscroll-behavior-y: none;
-        }
+        body { overscroll-behavior-y: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.05); }
     </style>
 </head>
-<body class="bg-slate-950 text-slate-200">
+<body class="bg-slate-950 text-slate-200 antialiased selection:bg-emerald-500 selection:text-white">
     <div id="root"></div>
 
     <script type="text/babel" data-type="module">
-        import React, { useState, useEffect } from 'https://esm.sh/react@18.2.0';
+        import React, { useState, useEffect, useMemo } from 'https://esm.sh/react@18.2.0';
         import { createRoot } from 'https://esm.sh/react-dom@18.2.0/client';
-        import { format, addDays, differenceInCalendarDays } from 'https://esm.sh/date-fns@2.30.0';
+        import { format, addDays, differenceInCalendarDays, parseISO, isBefore, startOfDay, addMonths, endOfMonth, getWeek } from 'https://esm.sh/date-fns@2.30.0';
+        import { ptBR } from 'https://esm.sh/date-fns@2.30.0/locale';
         import { 
             Dumbbell, User, Lock, Mail, ChevronRight, Plus, Activity, 
-            LogOut, Trash2, Calendar as CalendarIcon, Trophy, CheckCircle, Sparkles, X, BrainCircuit,
-            ChevronLeft, ChevronRight as ChevronRightIcon, Save, RefreshCw, CheckSquare, Square, Settings,
-            AlertTriangle, AlertCircle
+            LogOut, Calendar as CalendarIcon, CheckCircle, Sparkles, X, 
+            ChevronLeft, AlertTriangle, Play, RefreshCw, BarChart3, UserCheck, Settings, Save, Trash2
         } from 'https://esm.sh/lucide-react@0.263.1';
 
+        // --- FIREBASE SETUP ---
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
         import { 
-            getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, 
-            signOut, onAuthStateChanged, updateProfile 
+            getAuth, 
+            signInWithEmailAndPassword, 
+            createUserWithEmailAndPassword, 
+            signOut, 
+            onAuthStateChanged, 
+            updateProfile, 
+            sendPasswordResetEmail,
+            signInAnonymously
         } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
-        import { 
-            getFirestore, collection, addDoc, onSnapshot, deleteDoc, 
-            doc, query, serverTimestamp, setDoc, getDoc, writeBatch, where, getDocs
-        } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
-
-        // --- CONFIGURAÇÕES ---
-        
-        // ⚠️ IMPORTANTE: Certifique-se de que este Worker está no ar e aceita CORS
-        const WORKER_URL = "https://tight-cake-b5ef.lucasmaia2709.workers.dev"; 
+        import { getFirestore, collection, onSnapshot, doc, serverTimestamp, setDoc, getDoc, writeBatch, query, where, orderBy, getDocs } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
         const firebaseConfig = {
             apiKey: "AIzaSyAL5ExV2HRYWyHJckfz0CDmPvGbZHILb9A",
@@ -105,21 +81,74 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const APP_COLLECTION_PATH = 'users'; 
+        
+        // --- SEU WORKER CONFIGURADO ---
+        const WORKER_URL = "https://tight-cake-b5ef.lucasmaia2709.workers.dev"; 
 
+        // --- UTILITÁRIOS ---
         const toDateString = (date) => {
             const offset = date.getTimezoneOffset();
-            const localDate = new Date(date.getTime() - (offset*60*1000));
+            const localDate = new Date(date.getTime() - (offset * 60 * 1000));
             return localDate.toISOString().split('T')[0];
         };
 
-        // --- COMPONENTES UI ---
+        const ToastContext = React.createContext();
+
+        // --- COMPONENTES DE UI ---
+        const ToastProvider = ({ children }) => {
+            const [toasts, setToasts] = useState([]);
+
+            const addToast = (message, type = 'info') => {
+                const id = Math.random().toString(36).substr(2, 9);
+                setToasts(prev => [...prev, { id, message, type }]);
+                setTimeout(() => removeToast(id), 4000);
+            };
+
+            const removeToast = (id) => setToasts(prev => prev.filter(t => t.id !== id));
+
+            return (
+                <ToastContext.Provider value={{ addToast }}>
+                    {children}
+                    <div className="fixed top-4 left-0 right-0 z-[60] flex flex-col items-center gap-2 pointer-events-none px-4">
+                        {toasts.map(t => (
+                            <div key={t.id} className={`pointer-events-auto shadow-lg rounded-full px-6 py-3 text-sm font-semibold flex items-center gap-2 animate-slide-up ${
+                                t.type === 'error' ? 'bg-red-500/90 text-white' : 
+                                t.type === 'success' ? 'bg-emerald-500/90 text-white' : 'bg-slate-800 text-white border border-slate-700'
+                            }`}>
+                                {t.type === 'success' && <CheckCircle size={16}/>}
+                                {t.type === 'error' && <AlertTriangle size={16}/>}
+                                {t.message}
+                            </div>
+                        ))}
+                    </div>
+                </ToastContext.Provider>
+            );
+        };
+
+        const Button = ({ children, variant = 'primary', loading, onClick, className = '', type = 'button' }) => {
+            const baseClass = "w-full py-3.5 px-6 rounded-xl font-bold transition-all transform active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed";
+            const variants = {
+                primary: "bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-900/40",
+                secondary: "bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700",
+                danger: "bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20",
+                ghost: "bg-transparent hover:bg-slate-800 text-slate-400 hover:text-white"
+            };
+
+            return (
+                <button type={type} onClick={onClick} disabled={loading} className={`${baseClass} ${variants[variant]} ${className}`}>
+                    {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"/> : children}
+                </button>
+            );
+        };
+
         const Input = ({ icon: Icon, label, disabled, ...props }) => (
             <div className="mb-4">
                 {label && <label className="block text-xs text-slate-400 mb-1 ml-1">{label}</label>}
-                <div className="relative">
-                    {Icon && <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><Icon className="h-5 w-5 text-emerald-500" /></div>}
-                    <input {...props} disabled={disabled} className={`w-full ${Icon ? 'pl-10' : 'pl-4'} pr-4 py-3 bg-slate-800 border ${disabled ? 'border-slate-800 text-slate-500 cursor-not-allowed' : 'border-slate-700 text-white focus:border-emerald-500'} rounded-lg focus:outline-none placeholder-slate-400 transition-colors`} />
+                <div className="relative group">
+                    {Icon && <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <Icon className="h-5 w-5 text-slate-500 group-focus-within:text-emerald-500 transition-colors" />
+                    </div>}
+                    <input {...props} disabled={disabled} className={`w-full ${Icon ? 'pl-11' : 'pl-4'} pr-4 py-3.5 bg-slate-900/50 border ${disabled ? 'border-slate-800 text-slate-500 cursor-not-allowed' : 'border-slate-800 text-slate-200 focus:border-emerald-500/50 focus:bg-slate-900'} rounded-xl focus:outline-none placeholder-slate-500 transition-all`} />
                 </div>
             </div>
         );
@@ -127,152 +156,156 @@
         const Select = ({ label, options, disabled, ...props }) => (
             <div className="mb-4">
                 {label && <label className="block text-xs text-slate-400 mb-1 ml-1">{label}</label>}
-                <select {...props} disabled={disabled} className={`w-full pl-4 pr-4 py-3 bg-slate-800 border ${disabled ? 'border-slate-800 text-slate-500 cursor-not-allowed' : 'border-slate-700 text-white focus:border-emerald-500'} rounded-lg focus:outline-none transition-colors appearance-none`}>
+                <select {...props} disabled={disabled} className={`w-full pl-4 pr-4 py-3.5 bg-slate-900/50 border ${disabled ? 'border-slate-800 text-slate-500 cursor-not-allowed' : 'border-slate-800 text-slate-200 focus:border-emerald-500/50 focus:bg-slate-900'} rounded-xl focus:outline-none appearance-none transition-all`}>
                     {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                 </select>
             </div>
         );
 
-        const Button = ({ children, variant = 'primary', onClick, disabled, className = '', type="button" }) => {
-            const variants = {
-                primary: "bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-900/50",
-                secondary: "bg-slate-700 hover:bg-slate-600 text-white",
-                outline: "border-2 border-emerald-600 text-emerald-500 hover:bg-emerald-600/10",
-                danger: "bg-red-900/20 text-red-400 hover:bg-red-900/40 border border-red-900/50",
-                ai: "bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white shadow-lg shadow-purple-900/50"
-            };
-            return (
-                <button type={type} onClick={onClick} disabled={disabled} className={`w-full py-3 px-4 rounded-lg font-bold transition-all transform active:scale-95 flex items-center justify-center gap-2 ${variants[variant]} ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`}>
-                    {children}
-                </button>
-            );
-        };
-
-        // --- COMPONENTE DE FORMULÁRIO ---
+        // --- FORMULÁRIO DE PERFIL ---
         const ProfileFormContent = ({ formData, setFormData, readOnly = false }) => (
-            <div className="space-y-4">
-                <h4 className="text-sm font-bold text-purple-400 uppercase tracking-wider mb-2">1. Configuração do Treino</h4>
-                <div className="bg-slate-800 p-3 rounded-lg border border-slate-700 mb-4">
+            <div className="space-y-6">
+                <div>
+                    <h4 className="text-xs font-bold text-emerald-500 uppercase tracking-wider mb-3 flex items-center gap-2"><Settings size={14}/> Configuração do Treino</h4>
                     <Select 
-                        label="Tipo de Divisão (Treino)" 
+                        label="Tipo de Divisão (Split)" 
                         options={['ABC (Clássico)', 'Push/Pull/Legs', 'Upper/Lower', 'Full Body 3x']} 
                         value={formData.ciclo} 
                         disabled={readOnly} 
                         onChange={e => setFormData({...formData, ciclo: e.target.value})} 
                     />
-                    <p className="text-xs text-slate-500 mt-1">
-                        {formData.ciclo === 'ABC (Clássico)' && "Peito/Tríceps, Costas/Bíceps, Perna/Ombros + Descanso."}
-                        {formData.ciclo === 'Push/Pull/Legs' && "Empurrar, Puxar, Pernas + Descanso."}
-                        {formData.ciclo === 'Upper/Lower' && "Superior, Inferior + Descanso (2x na semana)."}
+                    <p className="text-[10px] text-slate-500 bg-slate-800/50 p-2 rounded-lg border border-slate-700/50">
+                        {formData.ciclo === 'ABC (Clássico)' && "A: Peito/Tríceps, B: Costas/Bíceps, C: Perna/Ombros."}
+                        {formData.ciclo === 'Push/Pull/Legs' && "Empurrar, Puxar, Pernas."}
+                        {formData.ciclo === 'Upper/Lower' && "Superior, Inferior (2x na semana)."}
                         {formData.ciclo === 'Full Body 3x' && "Corpo todo dia sim, dia não."}
                     </p>
                 </div>
-                <h4 className="text-sm font-bold text-purple-400 uppercase tracking-wider mb-2">2. Perfil Básico</h4>
-                <div className="grid grid-cols-2 gap-4">
-                    <Input label="Idade" value={formData.idade} disabled={readOnly} onChange={e => setFormData({...formData, idade: e.target.value})} type="number" />
-                    <Select label="Gênero" options={['Masculino', 'Feminino', 'Outro']} value={formData.genero} disabled={readOnly} onChange={e => setFormData({...formData, genero: e.target.value})} />
+
+                <div>
+                    <h4 className="text-xs font-bold text-purple-400 uppercase tracking-wider mb-3 flex items-center gap-2"><User size={14}/> Dados Pessoais</h4>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Input label="Idade" type="number" value={formData.idade} disabled={readOnly} onChange={e => setFormData({...formData, idade: e.target.value})} />
+                        <Select label="Gênero" options={['Masculino', 'Feminino']} value={formData.genero} disabled={readOnly} onChange={e => setFormData({...formData, genero: e.target.value})} />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Input label="Peso (kg)" type="number" value={formData.peso} disabled={readOnly} onChange={e => setFormData({...formData, peso: e.target.value})} />
+                        <Input label="Altura (cm)" type="number" value={formData.altura} disabled={readOnly} onChange={e => setFormData({...formData, altura: e.target.value})} />
+                    </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                    <Input label="Peso (kg)" type="number" value={formData.peso} disabled={readOnly} onChange={e => setFormData({...formData, peso: e.target.value})} />
-                    <Input label="Altura (m)" type="number" value={formData.altura} disabled={readOnly} onChange={e => setFormData({...formData, altura: e.target.value})} />
+
+                <div>
+                    <h4 className="text-xs font-bold text-blue-400 uppercase tracking-wider mb-3 flex items-center gap-2"><Activity size={14}/> Objetivo & Nível</h4>
+                    <Select label="Objetivo Principal" options={['Hipertrofia', 'Emagrecimento', 'Força', 'Resistência']} value={formData.objetivo} disabled={readOnly} onChange={e => setFormData({...formData, objetivo: e.target.value})} />
+                    <Select label="Experiência" options={['Iniciante', 'Intermediário', 'Avançado']} value={formData.experiencia} disabled={readOnly} onChange={e => setFormData({...formData, experiencia: e.target.value})} />
                 </div>
-                <h4 className="text-sm font-bold text-purple-400 uppercase tracking-wider mb-2 mt-6">3. Objetivo & Nível</h4>
-                <Select label="Objetivo" options={['Hipertrofia', 'Emagrecimento', 'Força']} value={formData.objetivo} disabled={readOnly} onChange={e => setFormData({...formData, objetivo: e.target.value})} />
-                <Select label="Experiência" options={['Iniciante', 'Intermediário', 'Avançado']} value={formData.experiencia} disabled={readOnly} onChange={e => setFormData({...formData, experiencia: e.target.value})} />
-                <h4 className="text-sm font-bold text-purple-400 uppercase tracking-wider mb-2 mt-6">4. Disponibilidade</h4>
-                <div className="grid grid-cols-2 gap-4">
-                    <Select label="Frequência" options={['3x', '4x', '5x', '6x']} value={formData.frequencia} disabled={readOnly} onChange={e => setFormData({...formData, frequencia: e.target.value})} />
-                    <Select label="Tempo" options={['30 min', '45 min', '1 hora', '1h 30min']} value={formData.tempo} disabled={readOnly} onChange={e => setFormData({...formData, tempo: e.target.value})} />
+
+                <div>
+                    <h4 className="text-xs font-bold text-amber-400 uppercase tracking-wider mb-3 flex items-center gap-2"><Sparkles size={14}/> Preferências</h4>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Select label="Frequência" options={['3x', '4x', '5x', '6x']} value={formData.frequencia} disabled={readOnly} onChange={e => setFormData({...formData, frequencia: e.target.value})} />
+                        <Select label="Tempo Disponível" options={['30 min', '45 min', '1 hora', '1h 30min']} value={formData.tempo} disabled={readOnly} onChange={e => setFormData({...formData, tempo: e.target.value})} />
+                    </div>
+                    <Input label="Limitações / Lesões" placeholder="Ex: Joelho, Ombro direito..." value={formData.limitacoes} disabled={readOnly} onChange={e => setFormData({...formData, limitacoes: e.target.value})} />
                 </div>
-                <h4 className="text-sm font-bold text-purple-400 uppercase tracking-wider mb-2 mt-6">5. Limitações</h4>
-                <Input label="Limitações/Lesões" value={formData.limitacoes} disabled={readOnly} onChange={e => setFormData({...formData, limitacoes: e.target.value})} placeholder="Ex: Joelho esquerdo" />
             </div>
         );
 
-        // --- CALENDÁRIO ---
-        function CalendarWidget({ workouts, selectedDate, onSelectDate }) {
-            const [currentMonth, setCurrentMonth] = useState(new Date());
-            const getDaysInMonth = (date) => new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
-            const getFirstDayOfMonth = (date) => new Date(date.getFullYear(), date.getMonth(), 1).getDay();
-            const daysInMonth = getDaysInMonth(currentMonth);
-            const firstDay = getFirstDayOfMonth(currentMonth);
-            const days = [];
-            for (let i = 0; i < firstDay; i++) days.push(null);
-            for (let i = 1; i <= daysInMonth; i++) days.push(new Date(currentMonth.getFullYear(), currentMonth.getMonth(), i));
-
-            const getDayStatus = (date) => {
-                if (!date) return null;
-                const dateStr = toDateString(date);
-                const dayWorkouts = workouts.filter(w => w.date === dateStr);
-                if (dayWorkouts.length === 0) return null; 
-                if (dayWorkouts.some(w => w.isRestDay)) return 'rest';
-                const allCompleted = dayWorkouts.every(w => w.completed);
-                const anySkipped = dayWorkouts.some(w => w.status === 'skipped');
-                if (anySkipped) return 'skipped';
-                if (allCompleted) return 'completed';
-                return 'pending';
-            };
-            const isSameDay = (d1, d2) => toDateString(d1) === toDateString(d2);
-
-            return (
-                <div className="bg-slate-900 rounded-xl p-5 border border-slate-800 sticky top-24 shadow-xl">
-                    <div className="flex items-center justify-between mb-4 pb-4 border-b border-slate-800">
-                        <button onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))} className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-white"><ChevronLeft className="h-5 w-5" /></button>
-                        <h3 className="font-bold text-white capitalize">{currentMonth.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}</h3>
-                        <button onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1))} className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-white"><ChevronRightIcon className="h-5 w-5" /></button>
-                    </div>
-                    <div className="calendar-grid mb-2">
-                        {['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].map(d => <div key={d} className="text-center text-xs text-slate-500 font-bold py-1">{d}</div>)}
-                    </div>
-                    <div className="calendar-grid">
-                        {days.map((date, idx) => {
-                            if (!date) return <div key={`empty-${idx}`} className="h-8"></div>;
-                            const status = getDayStatus(date);
-                            const isSelected = isSameDay(date, selectedDate);
-                            const isToday = isSameDay(date, new Date());
-                            let bgClass = "hover:bg-slate-800 text-slate-300";
-                            let dotClass = "";
-                            if (isSelected) bgClass = "bg-emerald-600 text-white shadow-lg";
-                            else if (isToday) bgClass = "border border-emerald-500/50 text-emerald-400";
-                            if (status === 'completed') dotClass = "bg-emerald-400";
-                            else if (status === 'skipped') dotClass = "bg-red-500";
-                            else if (status === 'rest') dotClass = "bg-blue-400";
-                            else if (status === 'pending') dotClass = "bg-slate-500";
-                            return (
-                                <button key={idx} onClick={() => onSelectDate(date)} className={`h-8 w-8 rounded-full flex items-center justify-center text-sm transition-all relative mx-auto ${bgClass}`}>
-                                    {date.getDate()}
-                                    {status && !isSelected && <div className={`absolute bottom-0.5 w-1 h-1 rounded-full ${dotClass}`}></div>}
-                                </button>
-                            );
-                        })}
-                    </div>
-                     <div className="mt-4 pt-4 border-t border-slate-800 flex justify-center gap-4 text-[10px] text-slate-500">
-                        <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-emerald-400"></div> Feito</div>
-                        <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-slate-500"></div> Pendente</div>
-                        <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-red-500"></div> Incompleto</div>
-                    </div>
-                </div>
-            );
-        }
-
-        // --- APP ---
-        function App() {
-            const [user, setUser] = useState(null);
-            const [loading, setLoading] = useState(true);
-            const [workouts, setWorkouts] = useState([]);
-            const [selectedDate, setSelectedDate] = useState(new Date());
-            
+        // --- TELA DE AUTH ---
+        const AuthScreen = () => {
+            const [isRegister, setIsRegister] = useState(false);
+            const [loading, setLoading] = useState(false);
             const [email, setEmail] = useState('');
             const [password, setPassword] = useState('');
             const [name, setName] = useState('');
-            const [error, setError] = useState('');
-            const [successMsg, setSuccessMsg] = useState('');
-            const [view, setView] = useState('login'); // 'login', 'register', 'forgot'
+            const { addToast } = React.useContext(ToastContext);
 
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                setLoading(true);
+                try {
+                    if (isRegister) {
+                        const res = await createUserWithEmailAndPassword(auth, email, password);
+                        await updateProfile(res.user, { displayName: name });
+                        addToast(`Bem-vindo, ${name}!`, 'success');
+                    } else {
+                        await signInWithEmailAndPassword(auth, email, password);
+                        addToast('Login realizado com sucesso!', 'success');
+                    }
+                } catch (error) {
+                    let msg = "Erro na autenticação.";
+                    if (error.code === 'auth/invalid-credential') msg = "E-mail ou senha incorretos.";
+                    if (error.code === 'auth/user-not-found') msg = "Utilizador não encontrado.";
+                    addToast(msg, 'error');
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            const handleGuestLogin = async () => {
+                setLoading(true);
+                try {
+                    await signInAnonymously(auth);
+                    addToast('Entrou como convidado!', 'success');
+                } catch (error) {
+                    addToast('Erro ao entrar como convidado.', 'error');
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            return (
+                <div className="min-h-screen flex items-center justify-center p-6 relative overflow-hidden">
+                    <div className="absolute top-[-20%] left-[-20%] w-[500px] h-[500px] bg-emerald-600/10 rounded-full blur-[120px] pointer-events-none"></div>
+                    <div className="absolute bottom-[-20%] right-[-20%] w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[120px] pointer-events-none"></div>
+                    
+                    <div className="w-full max-w-md glass p-8 rounded-3xl relative z-10 animate-slide-up">
+                        <div className="text-center mb-8">
+                            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 mb-4">
+                                <Dumbbell className="h-8 w-8 text-emerald-500" />
+                            </div>
+                            <h1 className="text-3xl font-bold text-white mb-2">Iron Tracker</h1>
+                            <p className="text-slate-400">Sua evolução começa agora.</p>
+                        </div>
+
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            {isRegister && <Input icon={User} placeholder="Seu Nome" value={name} onChange={e => setName(e.target.value)} required />}
+                            <Input icon={Mail} type="email" placeholder="E-mail" value={email} onChange={e => setEmail(e.target.value)} required />
+                            <Input icon={Lock} type="password" placeholder="Senha" value={password} onChange={e => setPassword(e.target.value)} required />
+                            
+                            <Button type="submit" loading={loading} className="mt-6">
+                                {isRegister ? 'Criar Conta Grátis' : 'Entrar na Conta'}
+                            </Button>
+
+                            <div className="relative py-2">
+                                <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-slate-700"></span></div>
+                                <div className="relative flex justify-center text-xs uppercase"><span className="bg-slate-900 px-2 text-slate-500">Ou</span></div>
+                            </div>
+
+                            <Button type="button" variant="secondary" onClick={handleGuestLogin} disabled={loading} className="w-full">
+                                <UserCheck size={18} /> Entrar como Convidado
+                            </Button>
+                        </form>
+
+                        <div className="mt-6 text-center">
+                            <button onClick={() => { setIsRegister(!isRegister); }} className="text-slate-400 hover:text-white text-sm transition-colors">
+                                {isRegister ? 'Já tem conta? Faça login' : 'Não tem conta? Cadastre-se'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- DASHBOARD PRINCIPAL ---
+        const Dashboard = ({ user }) => {
+            const { addToast } = React.useContext(ToastContext);
+            const [workouts, setWorkouts] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const [selectedDate, setSelectedDate] = useState(new Date());
             const [showAiModal, setShowAiModal] = useState(false);
             const [showProfileModal, setShowProfileModal] = useState(false);
-            const [isGenerating, setIsGenerating] = useState(false);
-            const [isShifting, setIsShifting] = useState(false);
+            const [hasLateWorkouts, setHasLateWorkouts] = useState(false);
             const [isConfirmingReset, setIsConfirmingReset] = useState(false);
             
             const [aiFormData, setAiFormData] = useState({
@@ -281,366 +314,537 @@
                 frequencia: '4x', tempo: '1 hora', limitacoes: '', ciclo: 'ABC (Clássico)'
             });
 
-            // --- INICIALIZAÇÃO ---
-            useEffect(() => {
-                const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-                    setUser(currentUser);
-                    if (currentUser) {
-                        setView('dashboard');
-                        fetchUserProfile(currentUser.uid);
-                    } else {
-                        // Se view atual for dashboard, volta pra login. 
-                        // Se estiver em 'forgot' ou 'register', mantém pra não frustrar o usuário.
-                        if (view === 'dashboard') setView('login');
-                    }
-                    setLoading(false);
-                });
-                return () => unsubscribe();
-            }, []);
+            // Lógica para detetar se há um plano ativo
+            const hasActivePlan = useMemo(() => {
+                const todayStr = toDateString(new Date());
+                return workouts.some(w => w.date >= todayStr);
+            }, [workouts]);
 
+            // Carregar dados
             useEffect(() => {
-                if (!user) return;
-                const collectionRef = collection(db, APP_COLLECTION_PATH, user.uid, 'workouts');
-                const q = query(collectionRef);
+                const fetchProfile = async () => {
+                    try {
+                        const docSnap = await getDoc(doc(db, 'users', user.uid, 'profile', 'main'));
+                        if (docSnap.exists()) setAiFormData(docSnap.data());
+                    } catch (err) { console.error(err); }
+                };
+                fetchProfile();
+
+                const q = query(collection(db, 'users', user.uid, 'workouts'));
                 const unsubscribe = onSnapshot(q, (snapshot) => {
-                    const docs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    setWorkouts(docs);
+                    const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    data.sort((a, b) => new Date(a.date) - new Date(b.date));
+                    setWorkouts(data);
+                    
+                    const todayStr = toDateString(new Date());
+                    const late = data.some(w => w.date < todayStr && !w.completed && w.status !== 'skipped' && !w.isRestDay);
+                    setHasLateWorkouts(late);
+                    setLoading(false);
                 });
                 return () => unsubscribe();
             }, [user]);
 
-            const fetchUserProfile = async (uid) => {
-                try {
-                    const docSnap = await getDoc(doc(db, APP_COLLECTION_PATH, uid, 'profile', 'main'));
-                    if (docSnap.exists()) setAiFormData(docSnap.data());
-                } catch (err) { console.error(err); }
-            };
             const saveUserProfile = async (data) => {
                 if(!user) return;
-                await setDoc(doc(db, APP_COLLECTION_PATH, user.uid, 'profile', 'main'), data);
+                await setDoc(doc(db, 'users', user.uid, 'profile', 'main'), data);
             };
 
-            useEffect(() => {
-                if (workouts.length > 0 && !isShifting) checkAndShiftSchedule();
-            }, [workouts]);
+            const handleSmartReschedule = async () => {
+                const today = startOfDay(new Date());
+                const todayStr = toDateString(today);
+                
+                const pendingPast = workouts
+                    .filter(w => w.date < todayStr && !w.completed && w.status !== 'skipped' && !w.isRestDay)
+                    .sort((a, b) => new Date(a.date) - new Date(b.date));
 
-            const checkAndShiftSchedule = async () => {
-                const todayStr = toDateString(new Date());
-                const pastPendingWorkouts = workouts.filter(w => w.date < todayStr && !w.completed && w.status !== 'skipped' && !w.isRestDay);
-                if (pastPendingWorkouts.length === 0) return;
-                setIsShifting(true);
+                if (pendingPast.length === 0) {
+                    addToast('Nenhum treino atrasado para reorganizar.', 'info');
+                    return;
+                }
+
+                const oldestDate = parseISO(pendingPast[0].date);
+                const daysDiff = differenceInCalendarDays(today, oldestDate);
+
+                if (daysDiff <= 0) return;
+
+                const affectedWorkouts = workouts
+                    .filter(w => w.date >= pendingPast[0].date && !w.completed && w.status !== 'skipped')
+                    .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+                const batchSize = 450; 
+                const batches = [];
+                let currentBatch = writeBatch(db);
+                let opCount = 0;
+
+                affectedWorkouts.forEach((w) => {
+                    const originalDate = parseISO(w.date);
+                    const newDate = addDays(originalDate, daysDiff);
+                    const ref = doc(db, 'users', user.uid, 'workouts', w.id);
+                    currentBatch.update(ref, { date: toDateString(newDate) });
+                    opCount++;
+                    if (opCount >= batchSize) {
+                        batches.push(currentBatch);
+                        currentBatch = writeBatch(db);
+                        opCount = 0;
+                    }
+                });
+                if (opCount > 0) batches.push(currentBatch);
+
                 try {
-                    const batch = writeBatch(db);
-                    const dates = pastPendingWorkouts.map(w => w.date).sort();
-                    const oldestDate = new Date(dates[0]);
-                    const todayDate = new Date(todayStr);
-                    const daysDiff = differenceInCalendarDays(todayDate, oldestDate);
-                    pastPendingWorkouts.forEach(w => {
-                        const ref = doc(db, APP_COLLECTION_PATH, user.uid, 'workouts', w.id);
-                        batch.update(ref, { status: 'skipped' });
-                    });
-                    const futureWorkouts = workouts.filter(w => w.date >= todayStr && !w.completed && w.status !== 'skipped');
-                    futureWorkouts.forEach(w => {
-                        const newDate = addDays(new Date(w.date), daysDiff);
-                        const ref = doc(db, APP_COLLECTION_PATH, user.uid, 'workouts', w.id);
-                        batch.update(ref, { date: toDateString(newDate) });
-                    });
-                    pastPendingWorkouts.forEach(w => {
-                        const newDate = addDays(new Date(w.date), daysDiff);
-                        const newRef = doc(collection(db, APP_COLLECTION_PATH, user.uid, 'workouts'));
-                        batch.set(newRef, { ...w, date: toDateString(newDate), status: 'pending', createdAt: serverTimestamp(), originalId: w.id });
-                    });
-                    await batch.commit();
-                } catch (err) { console.error("Erro ao reorganizar:", err); } finally { setIsShifting(false); }
+                    await Promise.all(batches.map(b => b.commit()));
+                    addToast(`Cronograma ajustado! ${affectedWorkouts.length} treinos movidos ${daysDiff} dias à frente.`, 'success');
+                    setHasLateWorkouts(false);
+                    setSelectedDate(new Date());
+                } catch (err) {
+                    console.error(err);
+                    addToast('Erro ao atualizar cronograma.', 'error');
+                }
             };
 
             const toggleComplete = async (workout) => {
-                const ref = doc(db, APP_COLLECTION_PATH, user.uid, 'workouts', workout.id);
-                await setDoc(ref, { completed: !workout.completed, status: !workout.completed ? 'completed' : 'pending' }, { merge: true });
+                const ref = doc(db, 'users', user.uid, 'workouts', workout.id);
+                try {
+                    await setDoc(ref, { 
+                        completed: !workout.completed, 
+                        status: !workout.completed ? 'completed' : 'pending' 
+                    }, { merge: true });
+                } catch (e) {
+                    addToast('Erro ao atualizar.', 'error');
+                }
             };
 
             const handleResetCycle = async () => {
-                const todayStr = toDateString(new Date());
+                setLoading(true);
                 const batch = writeBatch(db);
+                const todayStr = toDateString(new Date());
                 const futureWorkouts = workouts.filter(w => w.date >= todayStr);
-                if (futureWorkouts.length === 0) { alert("Você não tem treinos futuros para apagar."); setIsConfirmingReset(false); return; }
+                
+                if (futureWorkouts.length === 0) {
+                     addToast('Não há treinos futuros para apagar.', 'info');
+                     setLoading(false);
+                     setIsConfirmingReset(false);
+                     return;
+                }
+
                 futureWorkouts.forEach(w => {
-                    const ref = doc(db, APP_COLLECTION_PATH, user.uid, 'workouts', w.id);
-                    batch.delete(ref);
+                    batch.delete(doc(db, 'users', user.uid, 'workouts', w.id));
                 });
+
                 try {
                     await batch.commit();
+                    addToast('Ciclo atual encerrado com sucesso.', 'success');
                     setShowProfileModal(false);
                     setIsConfirmingReset(false);
-                    alert("Treino encerrado com sucesso! Você pode criar um novo agora.");
-                } catch (err) { console.error("Erro reset:", err); }
-            };
-
-            // --- GERADOR IA VIA CLOUDFLARE WORKER ---
-            const generateWorkoutPlan = async () => {
-                if (WORKER_URL.includes("seu-usuario")) {
-                    alert("⚠️ Configuração Necessária!\n\nVocê precisa substituir a variável WORKER_URL no código pelo link do seu Cloudflare Worker.");
-                    return;
-                }
-                
-                await saveUserProfile(aiFormData);
-                setIsGenerating(true);
-
-                try {
-                    const response = await fetch(WORKER_URL, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            perfil: {
-                                idade: aiFormData.idade,
-                                genero: aiFormData.genero,
-                                peso: aiFormData.peso,
-                                altura: aiFormData.altura,
-                                objetivo: aiFormData.objetivo,
-                                experiencia: aiFormData.experiencia
-                            },
-                            config: {
-                                frequencia: aiFormData.frequencia,
-                                tempo: aiFormData.tempo,
-                                limitacoes: aiFormData.limitacoes,
-                                ciclo: aiFormData.ciclo
-                            }
-                        })
-                    });
-
-                    if (!response.ok) {
-                        const errData = await response.json().catch(() => ({}));
-                        throw new Error(errData.error || "Erro na resposta do Servidor (Verifique se o Worker está no ar)");
-                    }
-                    
-                    const plan = await response.json();
-
-                    const batch = writeBatch(db);
-                    const today = new Date();
-                    const todayStr = toDateString(today);
-                    const futureDocs = workouts.filter(w => w.date >= todayStr);
-                    futureDocs.forEach(w => batch.delete(doc(db, APP_COLLECTION_PATH, user.uid, 'workouts', w.id)));
-
-                    plan.forEach(day => {
-                        const date = addDays(today, day.dayOffset);
-                        const dateStr = toDateString(date);
-                        if (day.isRest) {
-                            const ref = doc(collection(db, APP_COLLECTION_PATH, user.uid, 'workouts'));
-                            batch.set(ref, {
-                                date: dateStr, isRestDay: true, exercise: "Descanso Regenerativo", focus: "Descanso",
-                                completed: false, status: 'pending', createdAt: serverTimestamp()
-                            });
-                        } else {
-                            day.exercises.forEach(ex => {
-                                const ref = doc(collection(db, APP_COLLECTION_PATH, user.uid, 'workouts'));
-                                batch.set(ref, {
-                                    date: dateStr, 
-                                    exercise: ex.name || "Exercício", 
-                                    sets: ex.sets || 3, 
-                                    reps: ex.reps || 10,
-                                    weight: ex.weight || 0, 
-                                    focus: day.focus, 
-                                    completed: false, 
-                                    status: 'pending', 
-                                    isRestDay: false, 
-                                    isAiGenerated: true, 
-                                    createdAt: serverTimestamp()
-                                });
-                            });
-                        }
-                    });
-                    await batch.commit();
-                    setShowAiModal(false);
-                } catch (err) { 
-                    console.error("Erro detalhado:", err);
-                    if (err.name === 'TypeError' && err.message === 'Failed to fetch') {
-                        alert("Erro de Conexão: Não foi possível contatar o servidor.\n\nVerifique:\n1. Se a URL do Worker está correta.\n2. Se o Worker está no ar.\n3. Se o Worker permite CORS (Access-Control-Allow-Origin).");
-                    } else {
-                        alert("Erro ao gerar treino: " + err.message); 
-                    }
-                } finally { 
-                    setIsGenerating(false); 
-                }
-            };
-
-            const dateStr = toDateString(selectedDate);
-            const dailyWorkouts = workouts.filter(w => w.date === dateStr);
-            const isRestDay = dailyWorkouts.some(w => w.isRestDay);
-            const todayStr = toDateString(new Date());
-            const hasActivePlan = workouts.some(w => w.date >= todayStr);
-
-            // Auth Handlers
-            const handleLogin = async (e) => {
-                e.preventDefault(); setError(''); setLoading(true);
-                try { await signInWithEmailAndPassword(auth, email, password); }
-                catch (err) {
-                    if (err.code !== 'auth/invalid-credential' && err.code !== 'auth/user-not-found' && err.code !== 'auth/wrong-password') console.error("Login Error:", err);
-                    let msg = "Falha ao entrar.";
-                    if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password') msg = "E-mail ou senha incorretos.";
-                    else if (err.code === 'auth/user-not-found') msg = "Usuário não encontrado.";
-                    setError(msg); setLoading(false);
-                }
-            };
-
-            const handleRegister = async (e) => {
-                e.preventDefault(); setError(''); setLoading(true);
-                try { const c = await createUserWithEmailAndPassword(auth, email, password); await updateProfile(c.user, { displayName: name }); }
-                catch (err) {
-                    if (err.code !== 'auth/email-already-in-use') console.error("Register Error:", err);
-                    let msg = "Erro ao criar conta.";
-                    if (err.code === 'auth/email-already-in-use') msg = "E-mail já cadastrado.";
-                    else if (err.code === 'auth/weak-password') msg = "Senha muito fraca.";
-                    setError(msg); setLoading(false);
-                }
-            };
-
-            // Nova função: Esqueci a Senha
-            const handleForgotPassword = async (e) => {
-                e.preventDefault();
-                if (!email) {
-                    setError("Digite seu e-mail para recuperar a senha.");
-                    return;
-                }
-                setError('');
-                setSuccessMsg('');
-                setLoading(true);
-                try {
-                    await sendPasswordResetEmail(auth, email);
-                    setSuccessMsg("E-mail de recuperação enviado! Verifique sua caixa de entrada.");
-                    setTimeout(() => setView('login'), 5000); // Volta pro login após 5s
-                } catch (err) {
-                    console.error("Reset Password Error:", err);
-                    let msg = "Erro ao enviar e-mail.";
-                    if (err.code === 'auth/user-not-found') msg = "E-mail não cadastrado.";
-                    if (err.code === 'auth/invalid-email') msg = "E-mail inválido.";
-                    setError(msg);
+                } catch(err) {
+                    addToast('Erro ao apagar treinos.', 'error');
                 } finally {
                     setLoading(false);
                 }
             };
 
-            const handleLogout = async () => signOut(auth);
+            const generateTreino = async () => {
+                if (loading) return;
+                setLoading(true);
+                
+                await saveUserProfile(aiFormData);
 
-            // --- RENDER ---
-            if (loading && !user) return <div className="min-h-screen bg-slate-950 flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-emerald-500"></div></div>;
+                // --- LÓGICA DE GERAÇÃO EXCLUSIVA VIA WORKER ---
+                let cycleBase = [];
+                let isAiGenerated = false;
 
-            if (!user) return (
-                <div className="min-h-screen bg-slate-950 flex flex-col justify-center items-center p-4 relative overflow-hidden">
-                    <div className="absolute top-[-10%] right-[-10%] w-96 h-96 bg-emerald-600/20 rounded-full blur-[100px]"></div>
-                    <div className="z-10 w-full max-w-md bg-slate-900/80 backdrop-blur-xl p-8 rounded-2xl border border-slate-800 animate-fade-in">
-                        <div className="flex justify-center mb-6"><div className="bg-emerald-500/10 p-4 rounded-full border border-emerald-500/20"><Dumbbell className="h-10 w-10 text-emerald-500" /></div></div>
-                        <h2 className="text-3xl font-bold text-center text-white mb-2">IRON <span className="text-emerald-500">TRACKER</span></h2>
-                        
-                        {/* Mensagem de Erro ou Sucesso */}
-                        {error && (
-                            <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-3 rounded-lg mb-6 flex items-center gap-2 text-sm animate-pulse">
-                                <AlertCircle className="h-4 w-4 flex-shrink-0" /> {error}
-                            </div>
-                        )}
-                        {successMsg && (
-                            <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 p-3 rounded-lg mb-6 flex items-center gap-2 text-sm animate-pulse">
-                                <CheckCircle className="h-4 w-4 flex-shrink-0" /> {successMsg}
-                            </div>
-                        )}
+                try {
+                    const controller = new AbortController();
+                    // Timeout aumentado para 30 segundos (a IA pode demorar)
+                    const timeoutId = setTimeout(() => controller.abort(), 30000); 
 
-                        {/* Formulário Dinâmico */}
-                        <form onSubmit={view === 'login' ? handleLogin : view === 'register' ? handleRegister : handleForgotPassword}>
-                            
-                            {/* Título da tela */}
-                            <h3 className="text-xl font-semibold text-white mb-4 text-center">
-                                {view === 'login' ? 'Acesse sua conta' : view === 'register' ? 'Crie sua conta' : 'Recuperar Senha'}
-                            </h3>
+                    const res = await fetch(WORKER_URL, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ perfil: aiFormData, config: aiFormData }),
+                        signal: controller.signal
+                    });
+                    
+                    clearTimeout(timeoutId);
 
-                            {view === 'register' && <Input icon={User} placeholder="Nome" value={name} onChange={e=>setName(e.target.value)} required />}
-                            
-                            <Input icon={Mail} type="email" placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)} required />
-                            
-                            {view !== 'forgot' && (
-                                <div className="mb-4">
-                                    <Input icon={Lock} type="password" placeholder="Senha" value={password} onChange={e=>setPassword(e.target.value)} required />
-                                    {view === 'login' && (
-                                        <div className="flex justify-end mt-1">
-                                            <button 
-                                                type="button"
-                                                className="text-xs text-slate-400 hover:text-emerald-400 transition-colors"
-                                                onClick={() => { setView('forgot'); setError(''); setSuccessMsg(''); }}
-                                            >
-                                                Esqueci minha senha
-                                            </button>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
+                    if (res.ok) {
+                       const workerData = await res.json();
+                       if (Array.isArray(workerData) && workerData.length > 0) {
+                           cycleBase = workerData; 
+                           isAiGenerated = true;
+                           addToast('Plano Profissional recebido da IA!', 'success');
+                       } else {
+                           throw new Error("Resposta da IA vazia ou inválida.");
+                       }
+                    } else {
+                        // Tentar extrair a mensagem de erro do servidor
+                        let errorMessage = `Erro no servidor: ${res.status}`;
+                        try {
+                            const errorData = await res.json();
+                            if (errorData.error) errorMessage = errorData.error;
+                        } catch (e) {
+                            const text = await res.text();
+                            if (text) errorMessage = text;
+                        }
+                        throw new Error(errorMessage);
+                    }
+                } catch (e) {
+                    console.error("Erro na geração:", e);
+                    // Mostra erro real e não usa fallback.
+                    addToast(`Erro na IA: ${e.message}. Tente novamente.`, 'error');
+                    setLoading(false);
+                    return; // Interrompe tudo.
+                }
 
-                            <Button type="submit" disabled={loading}>
-                                {loading ? 'Processando...' : view === 'login' ? 'Entrar' : view === 'register' ? 'Cadastrar' : 'Enviar Link de Recuperação'}
-                            </Button>
-                        </form>
+                // Se chegou aqui, temos um cycleBase válido da IA.
+                const startDate = new Date();
+                const endDate = addMonths(endOfMonth(startDate), 2);
+                let plan = [];
 
-                        <div className="mt-6 text-center">
-                             <div className="text-slate-500 text-sm">
-                                {view === 'login' ? 'Ainda não tem conta?' : view === 'register' ? 'Já tem uma conta?' : 'Lembrou sua senha?'}
-                                <button 
-                                    className="text-emerald-500 ml-1 font-bold hover:underline" 
-                                    onClick={()=>{setView(view==='login'?'register':'login'); setError(''); setSuccessMsg('');}}
-                                >
-                                    {view==='login'?'Criar Conta':'Fazer Login'}
-                                </button>
-                             </div>
-                        </div>
-                    </div>
-                </div>
-            );
+                let currentDate = startDate;
+                let cycleIndex = 0;
+                
+                while (currentDate <= endDate) {
+                    const dayTemplate = cycleBase[cycleIndex % cycleBase.length];
+                    
+                    // IA já manda tudo pronto, apenas copiamos para a data correta
+                    let adjustedExercises = [];
+                    if (!dayTemplate.isRest && dayTemplate.exercises) {
+                        adjustedExercises = dayTemplate.exercises.map(ex => ({
+                            name: ex.name,
+                            sets: ex.sets,
+                            reps: ex.reps
+                        }));
+                    }
+
+                    plan.push({
+                        ...dayTemplate,
+                        exercises: adjustedExercises,
+                        focus: dayTemplate.focus,
+                        dateStr: toDateString(currentDate)
+                    });
+                    
+                    currentDate = addDays(currentDate, 1);
+                    cycleIndex++;
+                }
+
+                try {
+                    // Limpar treinos antigos do futuro
+                    const todayStr = toDateString(new Date());
+                    const q = query(collection(db, 'users', user.uid, 'workouts'), where("date", ">=", todayStr));
+                    const snapshot = await getDocs(q);
+                    const deleteBatches = [];
+                    let dBatch = writeBatch(db);
+                    let dCount = 0;
+                    snapshot.docs.forEach(doc => { dBatch.delete(doc.ref); dCount++; if (dCount >= 450) { deleteBatches.push(dBatch); dBatch = writeBatch(db); dCount = 0; }});
+                    if (dCount > 0) deleteBatches.push(dBatch);
+                    await Promise.all(deleteBatches.map(b => b.commit()));
+
+                    // Inserir novo plano
+                    const createBatches = [];
+                    let cBatch = writeBatch(db);
+                    let cCount = 0;
+                    plan.forEach(day => {
+                        const baseRef = collection(db, 'users', user.uid, 'workouts');
+                        if (day.isRest) {
+                            cBatch.set(doc(baseRef), {
+                                date: day.dateStr, isRestDay: true, exercise: "Descanso / Recuperação", focus: day.focus,
+                                completed: false, status: 'pending', createdAt: serverTimestamp()
+                            });
+                            cCount++;
+                        } else {
+                            day.exercises.forEach(ex => {
+                                cBatch.set(doc(baseRef), {
+                                    date: day.dateStr, exercise: ex.name, sets: ex.sets, reps: ex.reps, focus: day.focus,
+                                    completed: false, status: 'pending', isRestDay: false, createdAt: serverTimestamp()
+                                });
+                                cCount++;
+                            });
+                        }
+                        if (cCount >= 450) { createBatches.push(cBatch); cBatch = writeBatch(db); cCount = 0; }
+                    });
+                    if (cCount > 0) createBatches.push(cBatch);
+                    await Promise.all(createBatches.map(b => b.commit()));
+
+                    addToast('Plano de 90 dias criado com sucesso!', 'success');
+                    setShowAiModal(false);
+                } catch (err) {
+                    console.error("Erro na gravação:", err);
+                    addToast('Erro ao salvar o plano no banco de dados.', 'error');
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            const workoutsForSelectedDate = useMemo(() => {
+                const dStr = toDateString(selectedDate);
+                return workouts.filter(w => w.date === dStr);
+            }, [workouts, selectedDate]);
+
+            const dayStatus = useMemo(() => {
+                if(workoutsForSelectedDate.length === 0) return 'empty';
+                if(workoutsForSelectedDate.some(w => w.isRestDay)) return 'rest';
+                if(workoutsForSelectedDate.every(w => w.completed)) return 'completed';
+                return 'pending';
+            }, [workoutsForSelectedDate]);
 
             return (
-                <div className="min-h-screen bg-slate-950 text-slate-200 font-sans relative">
-                    {/* MODAL IA */}
-                    {showAiModal && (
-                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-                            <div className="bg-slate-900 w-full max-w-lg rounded-2xl border border-slate-700 shadow-2xl flex flex-col max-h-[90vh]">
-                                <div className="p-6 border-b border-slate-800 flex justify-between items-center"><h3 className="text-xl font-bold text-white flex gap-2"><Sparkles className="text-purple-400"/> Gerador de Treino</h3><button onClick={()=>setShowAiModal(false)}><X className="text-slate-400"/></button></div>
-                                <div className="p-6 overflow-y-auto scrollbar-hide">{isGenerating ? (<div className="py-10 text-center"><div className="animate-spin rounded-full h-12 w-12 border-purple-500 border-t-2 mx-auto mb-4"></div><p>Montando treino...</p></div>) : (<ProfileFormContent formData={aiFormData} setFormData={setAiFormData} readOnly={false} />)}</div>
-                                {!isGenerating && <div className="p-6 border-t border-slate-800"><Button variant="ai" onClick={generateWorkoutPlan}>Gerar Treino</Button></div>}
-                            </div>
-                        </div>
-                    )}
-                    {/* MODAL PERFIL */}
-                    {showProfileModal && (
-                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-                            <div className="bg-slate-900 w-full max-w-lg rounded-2xl border border-slate-700 p-6 flex flex-col max-h-[90vh]">
-                                <div className="flex justify-between mb-4 flex-shrink-0"><h3 className="font-bold text-xl flex items-center gap-2"><User className="text-emerald-500"/> Meu Perfil</h3><button onClick={()=>{setShowProfileModal(false); setIsConfirmingReset(false);}}><X/></button></div>
-                                <div className="space-y-4 overflow-y-auto scrollbar-hide flex-grow mb-4"><Input label="Nome" value={user.displayName || ''} disabled /><ProfileFormContent formData={aiFormData} setFormData={setAiFormData} readOnly={true} /></div>
-                                <div className="pt-4 border-t border-slate-800">
-                                    <h4 className="text-sm font-bold text-red-400 mb-2 flex items-center gap-2"><AlertTriangle className="h-4 w-4"/> Zona de Perigo</h4>
-                                    {!isConfirmingReset ? (<><p className="text-xs text-slate-500 mb-3">Encerre o treino atual para criar um novo.</p><Button variant="danger" onClick={() => setIsConfirmingReset(true)}>Encerrar Treino Atual</Button></>) : (<div className="bg-red-900/10 p-3 rounded-lg border border-red-900/30 animate-fade-in"><p className="text-sm text-red-300 font-bold mb-2">Tem certeza?</p><p className="text-xs text-red-400/80 mb-3">Apagará treinos futuros.</p><div className="flex gap-2"><Button variant="danger" onClick={handleResetCycle}>Sim, Encerrar</Button><Button variant="secondary" onClick={() => setIsConfirmingReset(false)}>Cancelar</Button></div></div>)}
+                <div className="min-h-screen pb-20">
+                    <header className="fixed top-0 w-full z-40 glass border-b border-slate-800">
+                        <div className="max-w-xl mx-auto px-4 py-4 flex justify-between items-center">
+                            <div className="flex items-center gap-3">
+                                <div className="bg-emerald-500/10 p-2 rounded-lg"><Dumbbell className="text-emerald-500 h-5 w-5"/></div>
+                                <div>
+                                    <h1 className="font-bold text-white text-lg leading-none">Iron Tracker</h1>
+                                    <p className="text-xs text-slate-400">Olá, {user.isAnonymous ? 'Convidado' : (user.displayName || 'Atleta')}</p>
                                 </div>
                             </div>
-                        </div>
-                    )}
-                    <nav className="bg-slate-900 border-b border-slate-800 sticky top-0 z-20">
-                        <div className="max-w-4xl mx-auto px-4 py-4 flex justify-between items-center">
-                            <div className="flex items-center gap-2 font-bold text-xl">IRON<span className="text-emerald-500">TRACKER</span></div>
-                            <div className="flex gap-4"><button onClick={()=>setShowProfileModal(true)} className="flex items-center gap-2 text-sm font-bold hover:bg-slate-800 px-3 py-1 rounded-lg transition-colors">{user.displayName || 'Atleta'} <User className="h-4 w-4 text-emerald-500"/></button><button onClick={handleLogout}><LogOut className="h-5 w-5 hover:text-red-400"/></button></div>
-                        </div>
-                    </nav>
-                    <main className="max-w-4xl mx-auto px-4 py-8">
-                        {!hasActivePlan && (<div className="mb-8 bg-gradient-to-r from-emerald-900/40 to-slate-900 border border-emerald-500/20 rounded-2xl p-6 flex justify-between items-center animate-fade-in"><div><h1 className="text-2xl font-bold text-white">Painel de Controle</h1><p className="text-slate-400 text-sm mt-1">Nenhum treino ativo.</p></div><Button variant="ai" onClick={()=>setShowAiModal(true)} className="w-auto px-6"><Plus className="h-4 w-4"/> Novo Treino</Button></div>)}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div className="md:col-span-1"><CalendarWidget workouts={workouts} selectedDate={selectedDate} onSelectDate={setSelectedDate} /></div>
-                            <div className="md:col-span-2">
-                                <div className="flex items-center justify-between mb-4"><h3 className="font-bold flex items-center gap-2"><Activity className="h-5 w-5 text-emerald-500"/> Treino do Dia</h3><span className="text-xs bg-emerald-900/20 text-emerald-400 px-3 py-1 rounded-full border border-emerald-500/30 flex items-center gap-1"><CalendarIcon className="h-3 w-3"/> {format(selectedDate, 'dd/MM')}</span></div>
-                                <div className="space-y-3">
-                                    {dailyWorkouts.length === 0 ? (<div className="text-center py-12 bg-slate-900/30 rounded-xl border border-slate-800 border-dashed"><CalendarIcon className="h-8 w-8 text-slate-600 mx-auto mb-2"/><p className="text-slate-300 font-bold">Sem Registro</p><p className="text-slate-500 text-sm">Nenhum plano.</p></div>) : isRestDay ? (<div className="bg-blue-900/20 border border-blue-500/30 p-6 rounded-xl text-center"><div className="bg-blue-500/20 p-4 rounded-full inline-block mb-3"><Sparkles className="h-8 w-8 text-blue-400" /></div><h3 className="text-xl font-bold text-blue-100">Descanso</h3><p className="text-blue-300 text-sm mt-2">Recupere-se!</p><div className="mt-4"><button onClick={()=>toggleComplete(dailyWorkouts[0])} className={`px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 mx-auto ${dailyWorkouts[0].completed ? 'bg-blue-500 text-white' : 'bg-slate-800 text-blue-400'}`}>{dailyWorkouts[0].completed ? <CheckCircle className="h-4 w-4"/> : <div className="w-4 h-4 border-2 border-current rounded-sm"/>}{dailyWorkouts[0].completed ? 'Registrado' : 'Confirmar'}</button></div></div>) : (<><div className="flex items-center gap-2 mb-2"><span className="text-xs font-bold uppercase tracking-wider text-slate-500 bg-slate-900 px-2 py-1 rounded border border-slate-800">Foco: {dailyWorkouts[0].focus}</span></div>{dailyWorkouts.map(workout => (<div key={workout.id} onClick={()=>toggleComplete(workout)} className={`p-4 rounded-xl border transition-all cursor-pointer flex items-center justify-between group ${workout.completed ? 'bg-emerald-900/10 border-emerald-500/30 opacity-70' : 'bg-slate-900 border-slate-800 hover:border-emerald-500/50'}`}><div className="flex items-center gap-4"><div className={`h-6 w-6 rounded flex items-center justify-center transition-colors ${workout.completed ? 'bg-emerald-500 text-white' : 'bg-slate-800 border border-slate-600 text-transparent group-hover:border-emerald-500'}`}><CheckCircle className="h-4 w-4" /></div><div><h4 className={`font-bold transition-colors ${workout.completed ? 'text-emerald-500 line-through' : 'text-white'}`}>{workout.exercise}</h4><div className="flex gap-3 text-sm text-slate-400 mt-1"><span className="bg-slate-800 px-2 py-0.5 rounded text-xs"><span className="text-emerald-500 font-bold">{workout.sets}</span> Séries</span><span className="bg-slate-800 px-2 py-0.5 rounded text-xs"><span className="text-emerald-500 font-bold">{workout.reps}</span> Reps</span></div></div></div></div>))}</>)}
-                                </div>
+                            <div className="flex gap-2">
+                                <button onClick={() => setShowProfileModal(true)} className="p-2 hover:bg-slate-800 rounded-full text-slate-400 transition-colors">
+                                    <User size={20}/>
+                                </button>
+                                <button onClick={() => auth.signOut()} className="p-2 hover:bg-slate-800 rounded-full text-slate-400 transition-colors">
+                                    <LogOut size={20}/>
+                                </button>
                             </div>
                         </div>
+                    </header>
+
+                    <main className="max-w-xl mx-auto px-4 pt-24 space-y-6">
+                        {!hasActivePlan && (
+                            <div className="bg-gradient-to-r from-emerald-900/40 to-slate-900 border border-emerald-500/20 rounded-2xl p-6 flex flex-col sm:flex-row justify-between items-center gap-4 animate-fade-in shadow-xl shadow-emerald-900/10">
+                                <div>
+                                    <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                                        <Sparkles className="text-emerald-400" size={20}/> 
+                                        Nenhum Treino Ativo
+                                    </h2>
+                                    <p className="text-slate-400 text-sm mt-1">Crie um novo ciclo de treinos personalizado.</p>
+                                </div>
+                                <Button onClick={() => setShowAiModal(true)} className="w-auto px-6 whitespace-nowrap bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-500/20 border-0">
+                                    <Plus size={18} className="mr-2"/> Novo Ciclo
+                                </Button>
+                            </div>
+                        )}
+
+                        {hasLateWorkouts && (
+                            <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 animate-fade-in">
+                                <div className="flex items-center gap-3">
+                                    <div className="bg-amber-500/20 p-2 rounded-full"><AlertTriangle className="text-amber-500 h-5 w-5"/></div>
+                                    <div>
+                                        <p className="font-bold text-amber-500">Cronograma Atrasado</p>
+                                        <p className="text-xs text-amber-200/70">Existem treinos pendentes no passado.</p>
+                                    </div>
+                                </div>
+                                <Button variant="secondary" onClick={handleSmartReschedule} className="py-2 px-4 text-sm w-full sm:w-auto bg-amber-500/20 hover:bg-amber-500/30 border-amber-500/30 text-amber-200">
+                                    <RefreshCw size={14} className="mr-2"/> Ajustar (Empurrar Fila)
+                                </Button>
+                            </div>
+                        )}
+
+                        <section className="bg-slate-900 rounded-2xl p-4 border border-slate-800 shadow-xl">
+                            <div className="flex items-center justify-between mb-4">
+                                <button onClick={() => setSelectedDate(addDays(selectedDate, -1))} className="p-1 hover:bg-slate-800 rounded text-slate-400"><ChevronLeft size={20}/></button>
+                                <h2 className="font-bold text-white capitalize">{format(selectedDate, "EEEE, d 'de' MMMM", { locale: ptBR })}</h2>
+                                <button onClick={() => setSelectedDate(addDays(selectedDate, 1))} className="p-1 hover:bg-slate-800 rounded text-slate-400"><ChevronRight size={20}/></button>
+                            </div>
+                            
+                            <div className="flex justify-between items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                                {[-3, -2, -1, 0, 1, 2, 3].map(offset => {
+                                    const date = addDays(selectedDate, offset);
+                                    const dateStr = toDateString(date);
+                                    const isSelected = offset === 0;
+                                    const dayWorkouts = workouts.filter(w => w.date === dateStr);
+                                    
+                                    let indicatorColor = 'bg-slate-700';
+                                    if (dayWorkouts.length > 0) {
+                                        if (dayWorkouts.some(w => w.isRestDay)) indicatorColor = 'bg-blue-500';
+                                        else if (dayWorkouts.every(w => w.completed)) indicatorColor = 'bg-emerald-500';
+                                        else if (date < new Date() && !dayWorkouts.every(w => w.completed)) indicatorColor = 'bg-red-500'; 
+                                        else indicatorColor = 'bg-slate-500';
+                                    }
+
+                                    return (
+                                        <button key={offset} onClick={() => setSelectedDate(date)} 
+                                            className={`flex flex-col items-center justify-center min-w-[3rem] h-14 rounded-xl border transition-all ${isSelected ? 'bg-slate-800 border-emerald-500 text-white shadow-lg shadow-emerald-900/20' : 'bg-transparent border-transparent text-slate-500 hover:bg-slate-800/50'}`}
+                                        >
+                                            <span className="text-[10px] font-bold uppercase">{format(date, 'EEE', { locale: ptBR })}</span>
+                                            <span className="text-lg font-bold">{format(date, 'd')}</span>
+                                            <div className={`w-1.5 h-1.5 rounded-full mt-1 ${indicatorColor}`}></div>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </section>
+
+                        <section>
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="font-bold text-white text-lg flex items-center gap-2">
+                                    <Activity className="text-emerald-500" size={20}/> 
+                                    {dayStatus === 'rest' ? 'Dia de Descanso' : dayStatus === 'empty' ? 'Sem Treino' : 'Exercícios'}
+                                </h3>
+                                {dayStatus !== 'empty' && dayStatus !== 'rest' && (
+                                    <div className="text-xs font-bold px-2 py-1 rounded bg-slate-800 text-slate-400 border border-slate-700">
+                                        {workoutsForSelectedDate.filter(w => w.completed).length}/{workoutsForSelectedDate.length} Concluídos
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="space-y-3">
+                                {workoutsForSelectedDate.length === 0 ? (
+                                    <div className="text-center py-12 border-2 border-dashed border-slate-800 rounded-2xl">
+                                        <div className="bg-slate-800/50 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
+                                            <CalendarIcon className="text-slate-500"/>
+                                        </div>
+                                        <p className="text-slate-400 font-medium">Nenhum treino planejado</p>
+                                        <Button variant="ghost" className="mt-2 text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10" onClick={() => setShowAiModal(true)}>
+                                            + Criar Plano
+                                        </Button>
+                                    </div>
+                                ) : dayStatus === 'rest' ? (
+                                    <div className="bg-blue-500/10 border border-blue-500/20 rounded-2xl p-6 text-center animate-fade-in">
+                                        <Sparkles className="h-12 w-12 text-blue-400 mx-auto mb-4 animate-pulse"/>
+                                        <h3 className="text-xl font-bold text-white">Recuperação Muscular</h3>
+                                        <p className="text-blue-200/70 mt-2">Aproveite para comer bem e dormir 8 horas.</p>
+                                        {!workoutsForSelectedDate[0].completed && (
+                                            <Button variant="secondary" className="mt-6 mx-auto bg-blue-500/20 hover:bg-blue-500/30 text-blue-200 border-blue-500/30 w-auto" onClick={() => toggleComplete(workoutsForSelectedDate[0])}>
+                                                Marcar Descanso Concluído
+                                            </Button>
+                                        )}
+                                    </div>
+                                ) : (
+                                    workoutsForSelectedDate.map(workout => (
+                                        <div key={workout.id} onClick={() => toggleComplete(workout)} 
+                                            className={`relative group p-4 rounded-xl border transition-all cursor-pointer flex items-center justify-between overflow-hidden ${
+                                                workout.completed 
+                                                ? 'bg-emerald-950/30 border-emerald-500/30' 
+                                                : 'bg-slate-900 border-slate-800 hover:border-slate-600'
+                                            }`}
+                                        >
+                                            {workout.completed && <div className="absolute inset-0 bg-emerald-500/5 pointer-events-none"></div>}
+                                            
+                                            <div className="flex items-center gap-4 z-10">
+                                                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
+                                                    workout.completed ? 'bg-emerald-500 border-emerald-500' : 'border-slate-600 group-hover:border-emerald-500'
+                                                }`}>
+                                                    {workout.completed && <CheckCircle size={14} className="text-white"/>}
+                                                </div>
+                                                <div>
+                                                    <h4 className={`font-bold text-base ${workout.completed ? 'text-slate-500 line-through decoration-emerald-500/50' : 'text-slate-200'}`}>
+                                                        {workout.exercise}
+                                                    </h4>
+                                                    <div className="flex items-center gap-3 text-xs text-slate-500 mt-1">
+                                                        <span className="flex items-center gap-1"><span className="text-emerald-500 font-bold">{workout.sets}</span> Séries</span>
+                                                        <span className="w-1 h-1 rounded-full bg-slate-700"></span>
+                                                        <span className="flex items-center gap-1"><span className="text-emerald-500 font-bold">{workout.reps}</span> Reps</span>
+                                                        {workout.focus && (
+                                                            <>
+                                                                <span className="w-1 h-1 rounded-full bg-slate-700"></span>
+                                                                <span className="uppercase tracking-wider text-[10px]">{workout.focus.split(':')[0]}</span>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </section>
                     </main>
+
+                    <button onClick={() => setShowAiModal(true)} className="fixed bottom-6 right-6 w-14 h-14 bg-emerald-500 hover:bg-emerald-400 text-white rounded-full shadow-lg shadow-emerald-900/50 flex items-center justify-center transition-transform hover:scale-105 active:scale-95 z-40">
+                        <Plus size={28}/>
+                    </button>
+
+                    {showAiModal && (
+                        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in">
+                            <div className="bg-slate-900 w-full max-w-lg rounded-3xl border border-slate-700 max-h-[90vh] flex flex-col animate-slide-up">
+                                <div className="p-6 border-b border-slate-800 flex justify-between items-center">
+                                    <h3 className="text-xl font-bold text-white flex items-center gap-2"><Sparkles className="text-purple-400"/> Gerar Treino</h3>
+                                    <button onClick={() => setShowAiModal(false)}><X className="text-slate-400"/></button>
+                                </div>
+                                <div className="p-6 overflow-y-auto space-y-6">
+                                    <ProfileFormContent formData={aiFormData} setFormData={setAiFormData} />
+                                    <div className="bg-purple-900/10 p-4 rounded-xl border border-purple-500/20">
+                                        <p className="text-xs text-purple-200/70 text-center">
+                                            A IA (via Cloudflare) vai gerar um plano de 3 meses baseado nestes dados. Treinos futuros existentes serão substituídos.
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="p-6 border-t border-slate-800">
+                                    <Button onClick={generateTreino} loading={loading} className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 shadow-purple-900/40">
+                                        <Sparkles size={18}/> Gerar Plano Trimestral
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {showProfileModal && (
+                        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in">
+                            <div className="bg-slate-900 w-full max-w-lg rounded-3xl border border-slate-700 max-h-[90vh] flex flex-col animate-slide-up">
+                                <div className="p-6 border-b border-slate-800 flex justify-between items-center">
+                                    <h3 className="text-xl font-bold text-white flex items-center gap-2"><User className="text-emerald-500"/> Meu Perfil</h3>
+                                    <button onClick={() => setShowProfileModal(false)}><X className="text-slate-400"/></button>
+                                </div>
+                                <div className="p-6 overflow-y-auto space-y-6">
+                                    <ProfileFormContent formData={aiFormData} setFormData={setAiFormData} />
+                                </div>
+                                <div className="p-6 border-t border-slate-800 flex flex-col gap-3">
+                                    <Button onClick={async () => { 
+                                        setLoading(true); 
+                                        await saveUserProfile(aiFormData); 
+                                        setLoading(false); 
+                                        setShowProfileModal(false); 
+                                        addToast('Perfil salvo!', 'success'); 
+                                    }} loading={loading} variant="primary">
+                                        <Save size={18}/> Salvar Alterações
+                                    </Button>
+
+                                    <div className="mt-4 pt-4 border-t border-slate-800">
+                                        {!isConfirmingReset ? (
+                                            <button onClick={() => setIsConfirmingReset(true)} className="w-full text-red-400 text-xs font-bold hover:text-red-300 transition-colors flex items-center justify-center gap-2 py-2">
+                                                <Trash2 size={14}/> Encerrar Ciclo Atual (Apagar Futuros)
+                                            </button>
+                                        ) : (
+                                            <div className="bg-red-900/10 p-3 rounded-lg border border-red-500/20 text-center animate-fade-in">
+                                                <p className="text-xs text-red-300 mb-3 font-bold">Tem certeza? Isso apagará todos os treinos futuros.</p>
+                                                <div className="flex gap-2">
+                                                    <Button variant="danger" onClick={handleResetCycle} loading={loading} className="py-2 text-xs">Sim, Apagar</Button>
+                                                    <Button variant="secondary" onClick={() => setIsConfirmingReset(false)} className="py-2 text-xs">Cancelar</Button>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
             );
-        }
+        };
 
-        const root = createRoot(document.getElementById('root'));
-        root.render(<App />);
+        const App = () => {
+            const [user, setUser] = useState(null);
+            const [loading, setLoading] = useState(true);
+
+            useEffect(() => {
+                const unsub = onAuthStateChanged(auth, (u) => {
+                    setUser(u);
+                    setLoading(false);
+                });
+                return () => unsub();
+            }, []);
+
+            if (loading) return <div className="min-h-screen bg-slate-950 flex items-center justify-center"><div className="w-8 h-8 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin"></div></div>;
+
+            return (
+                <ToastProvider>
+                    {user ? <Dashboard user={user} /> : <AuthScreen />}
+                </ToastProvider>
+            );
+        };
+
+        createRoot(document.getElementById('root')).render(<App />);
     </script>
 </body>
 </html>
