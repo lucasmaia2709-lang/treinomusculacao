@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
@@ -9,8 +9,11 @@
     <meta name="theme-color" content="#020617">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2548/2548530.png">
-    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/2548/2548530.png">
+    <meta name="apple-mobile-web-app-title" content="Iron Tracker">
+
+    <!-- ÍCONE PERSONALIZADO (Haltere Esmeralda em Fundo Escuro) -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEyOCIgZmlsbD0iIzBmMTcyYSIvPjxwYXRoIGQ9Ik0zODQgMTI4bC0zMi0zMmMtMTIuNS0xMi41LTMyLjgtMTIuNS00NS4zIDBsLTI1LjQgMjUuNC04Mi42LTI4LjNjLTcuMy0yLjUtMTUuMy0uNi0yMC44IDQuOWwtMjIuNiAyMi42Yy00LjMgNC4zLTUuNiAxMC43LTMuNCAxNi40bDE2LjIgNDAuNi01OS4zIDU5LjMtNDAuNi0xNi4yYy01LjctMi4zLTEyLjEtMS0xNi40IDMuNGwtMjIuNiAyMi42Yy01LjUgNS41LTcuNCAxMy41LTQuOSAyMC44bDI4LjMgODIuNi0yNS40IDI1LjRjLTEyLjUgMTIuNS0xMi41IDMyLjggMCA0NS4zbDMyIDMyYzEyLjUgMTIuNSAzMi44IDEyLjUgNDUuMyAwbDI1LjQtMjUuNCA4Mi42IDI4LjNjNy4zIDIuNSAxNS4zLjYgMjAuOC00LjlsMjIuNi0yMi42YzQuMy00LjMgNS42LTEwLjcgMy40LTE2LjRsLTE2LjItNDAuNiA1OS4zLTU5LjMgNDAuNiAxNi4yYzUuNyAyLjMgMTIuMSAxIDE2LjQtMy40bDIyLjYtMjIuNmM1LjUtNS41IDcuNC0xMy41IDQuOS0yMC44bC0yOC4zLTgyLjYgMjUuNC0yNS40YzEyLjUtMTIuNSAxMi41LTMyLjggMC00NS4zeiIgZmlsbD0iIzEwYjk4MSIvPjwvc3ZnPg==">
+    <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEyOCIgZmlsbD0iIzBmMTcyYSIvPjxwYXRoIGQ9Ik0zODQgMTI4bC0zMi0zMmMtMTIuNS0xMi41LTMyLjgtMTIuNS00NS4zIDBsLTI1LjQgMjUuNC04Mi42LTI4LjNjLTcuMy0yLjUtMTUuMy0uNi0yMC44IDQuOWwtMjIuNiAyMi42Yy00LjMgNC4zLTUuNiAxMC43LTMuNCAxNi40bDE2LjIgNDAuNi01OS4zIDU5LjMtNDAuNi0xNi4yYy01LjctMi4zLTEyLjEtMS0xNi40IDMuNGwtMjIuNiAyMi42Yy01LjUgNS41LTcuNCAxMy41LTQuOSAyMC44bDI4LjMgODIuNi0yNS40IDI1LjRjLTEyLjUgMTIuNS0xMi41IDMyLjggMCA0NS4zbDMyIDMyYzEyLjUgMTIuNSAzMi44IDEyLjUgNDUuMyAwbDI1LjQtMjUuNCA4Mi42IDI4LjNjNy4zIDIuNSAxNS4zLjYgMjAuOC00LjlsMjIuNi0yMi42YzQuMy00LjMgNS42LTEwLjcgMy40LTE2LjRsLTE2LjItNDAuNiA1OS4zLTU5LjMgNDAuNiAxNi4yYzUuNyAyLjMgMTIuMSAxIDE2LjQtMy40bDIyLjYtMjIuNmM1LjUtNS41IDcuNC0xMy41IDQuOS0yMC44bC0yOC4zLTgyLjYgMjUuNC0yNS40YzEyLjUtMTIuNSAxMi41LTMyLjggMC00NS4zeiIgZmlsbD0iIzEwYjk4MSIvPjwvc3ZnPg==">
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -18,8 +21,8 @@
         tailwind.config = {
             theme: {
                 extend: {
-                    colors: { slate: { 950: '#020617', 900: '#0f172a', 800: '#1e293b' }, emerald: { 450: '#10b981' } },
-                    animation: { 'fade-in': 'fadeIn 0.3s ease-out forwards', 'slide-up': 'slideUp 0.4s ease-out' },
+                    colors: { slate: { 950: '#020617', 900: '#0f172a', 800: '#1e293b' }, emerald: { 450: '#10b981' }, blue: { 450: '#3b82f6' } },
+                    animation: { 'fade-in': 'fadeIn 0.3s ease-out forwards', 'slide-up': 'slideUp 0.4s ease-out', 'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite' },
                     keyframes: {
                         fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
                         slideUp: { '0%': { transform: 'translateY(20px)', opacity: '0' }, '100%': { transform: 'translateY(0)', opacity: '1' } }
@@ -51,7 +54,8 @@
         import { 
             Dumbbell, User, Lock, Mail, ChevronRight, Plus, Activity, 
             LogOut, Calendar as CalendarIcon, CheckCircle, Sparkles, X, 
-            ChevronLeft, AlertTriangle, Play, RefreshCw, BarChart3, UserCheck, Settings, Save, Trash2
+            ChevronLeft, AlertTriangle, Play, RefreshCw, BarChart3, UserCheck, Settings, Save, Trash2,
+            PlusCircle, MinusCircle
         } from 'https://esm.sh/lucide-react@0.263.1';
 
         // --- FIREBASE SETUP ---
@@ -82,10 +86,8 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
         
-        // --- SEU WORKER CONFIGURADO ---
         const WORKER_URL = "https://tight-cake-b5ef.lucasmaia2709.workers.dev"; 
 
-        // --- UTILITÁRIOS ---
         const toDateString = (date) => {
             const offset = date.getTimezoneOffset();
             const localDate = new Date(date.getTime() - (offset * 60 * 1000));
@@ -94,7 +96,6 @@
 
         const ToastContext = React.createContext();
 
-        // --- COMPONENTES DE UI ---
         const ToastProvider = ({ children }) => {
             const [toasts, setToasts] = useState([]);
 
@@ -131,7 +132,8 @@
                 primary: "bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-900/40",
                 secondary: "bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700",
                 danger: "bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20",
-                ghost: "bg-transparent hover:bg-slate-800 text-slate-400 hover:text-white"
+                ghost: "bg-transparent hover:bg-slate-800 text-slate-400 hover:text-white",
+                blue: "bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-900/40"
             };
 
             return (
@@ -162,26 +164,12 @@
             </div>
         );
 
-        // --- FORMULÁRIO DE PERFIL ---
         const ProfileFormContent = ({ formData, setFormData, readOnly = false }) => (
             <div className="space-y-6">
                 <div>
                     <h4 className="text-xs font-bold text-emerald-500 uppercase tracking-wider mb-3 flex items-center gap-2"><Settings size={14}/> Configuração do Treino</h4>
-                    <Select 
-                        label="Tipo de Divisão (Split)" 
-                        options={['ABC (Clássico)', 'Push/Pull/Legs', 'Upper/Lower', 'Full Body 3x']} 
-                        value={formData.ciclo} 
-                        disabled={readOnly} 
-                        onChange={e => setFormData({...formData, ciclo: e.target.value})} 
-                    />
-                    <p className="text-[10px] text-slate-500 bg-slate-800/50 p-2 rounded-lg border border-slate-700/50">
-                        {formData.ciclo === 'ABC (Clássico)' && "A: Peito/Tríceps, B: Costas/Bíceps, C: Perna/Ombros."}
-                        {formData.ciclo === 'Push/Pull/Legs' && "Empurrar, Puxar, Pernas."}
-                        {formData.ciclo === 'Upper/Lower' && "Superior, Inferior (2x na semana)."}
-                        {formData.ciclo === 'Full Body 3x' && "Corpo todo dia sim, dia não."}
-                    </p>
+                    <Select label="Tipo de Divisão (Split)" options={['ABC (Clássico)', 'Push/Pull/Legs', 'Upper/Lower', 'Full Body 3x']} value={formData.ciclo} disabled={readOnly} onChange={e => setFormData({...formData, ciclo: e.target.value})} />
                 </div>
-
                 <div>
                     <h4 className="text-xs font-bold text-purple-400 uppercase tracking-wider mb-3 flex items-center gap-2"><User size={14}/> Dados Pessoais</h4>
                     <div className="grid grid-cols-2 gap-3">
@@ -193,13 +181,11 @@
                         <Input label="Altura (cm)" type="number" value={formData.altura} disabled={readOnly} onChange={e => setFormData({...formData, altura: e.target.value})} />
                     </div>
                 </div>
-
                 <div>
                     <h4 className="text-xs font-bold text-blue-400 uppercase tracking-wider mb-3 flex items-center gap-2"><Activity size={14}/> Objetivo & Nível</h4>
                     <Select label="Objetivo Principal" options={['Hipertrofia', 'Emagrecimento', 'Força', 'Resistência']} value={formData.objetivo} disabled={readOnly} onChange={e => setFormData({...formData, objetivo: e.target.value})} />
                     <Select label="Experiência" options={['Iniciante', 'Intermediário', 'Avançado']} value={formData.experiencia} disabled={readOnly} onChange={e => setFormData({...formData, experiencia: e.target.value})} />
                 </div>
-
                 <div>
                     <h4 className="text-xs font-bold text-amber-400 uppercase tracking-wider mb-3 flex items-center gap-2"><Sparkles size={14}/> Preferências</h4>
                     <div className="grid grid-cols-2 gap-3">
@@ -211,7 +197,6 @@
             </div>
         );
 
-        // --- TELA DE AUTH ---
         const AuthScreen = () => {
             const [isRegister, setIsRegister] = useState(false);
             const [loading, setLoading] = useState(false);
@@ -236,19 +221,28 @@
                     let msg = "Erro na autenticação.";
                     if (error.code === 'auth/invalid-credential') msg = "E-mail ou senha incorretos.";
                     if (error.code === 'auth/user-not-found') msg = "Utilizador não encontrado.";
+                    if (error.code === 'auth/email-already-in-use') msg = "E-mail já está em uso.";
+                    if (error.code === 'auth/weak-password') msg = "A senha deve ter pelo menos 6 caracteres.";
                     addToast(msg, 'error');
                 } finally {
                     setLoading(false);
                 }
             };
 
-            const handleGuestLogin = async () => {
+            const handleResetPassword = async () => {
+                if (!email) {
+                    addToast('Digite seu e-mail acima para redefinir a senha.', 'info');
+                    return;
+                }
                 setLoading(true);
                 try {
-                    await signInAnonymously(auth);
-                    addToast('Entrou como convidado!', 'success');
+                    await sendPasswordResetEmail(auth, email);
+                    addToast('E-mail de redefinição enviado! Verifique sua caixa de entrada.', 'success');
                 } catch (error) {
-                    addToast('Erro ao entrar como convidado.', 'error');
+                    let msg = "Erro ao enviar e-mail.";
+                    if (error.code === 'auth/user-not-found') msg = "E-mail não encontrado.";
+                    if (error.code === 'auth/invalid-email') msg = "Formato de e-mail inválido.";
+                    addToast(msg, 'error');
                 } finally {
                     setLoading(false);
                 }
@@ -267,37 +261,27 @@
                             <h1 className="text-3xl font-bold text-white mb-2">Iron Tracker</h1>
                             <p className="text-slate-400">Sua evolução começa agora.</p>
                         </div>
-
                         <form onSubmit={handleSubmit} className="space-y-4">
                             {isRegister && <Input icon={User} placeholder="Seu Nome" value={name} onChange={e => setName(e.target.value)} required />}
                             <Input icon={Mail} type="email" placeholder="E-mail" value={email} onChange={e => setEmail(e.target.value)} required />
-                            <Input icon={Lock} type="password" placeholder="Senha" value={password} onChange={e => setPassword(e.target.value)} required />
-                            
-                            <Button type="submit" loading={loading} className="mt-6">
-                                {isRegister ? 'Criar Conta Grátis' : 'Entrar na Conta'}
-                            </Button>
-
-                            <div className="relative py-2">
-                                <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-slate-700"></span></div>
-                                <div className="relative flex justify-center text-xs uppercase"><span className="bg-slate-900 px-2 text-slate-500">Ou</span></div>
+                            <div className="space-y-2">
+                                <Input icon={Lock} type="password" placeholder="Senha" value={password} onChange={e => setPassword(e.target.value)} required />
+                                {!isRegister && (
+                                    <div className="flex justify-end">
+                                        <button type="button" onClick={handleResetPassword} className="text-xs text-slate-400 hover:text-emerald-400 transition-colors">Esqueceu a senha?</button>
+                                    </div>
+                                )}
                             </div>
-
-                            <Button type="button" variant="secondary" onClick={handleGuestLogin} disabled={loading} className="w-full">
-                                <UserCheck size={18} /> Entrar como Convidado
-                            </Button>
+                            <Button type="submit" loading={loading} className="mt-6">{isRegister ? 'Criar Conta Grátis' : 'Entrar na Conta'}</Button>
                         </form>
-
                         <div className="mt-6 text-center">
-                            <button onClick={() => { setIsRegister(!isRegister); }} className="text-slate-400 hover:text-white text-sm transition-colors">
-                                {isRegister ? 'Já tem conta? Faça login' : 'Não tem conta? Cadastre-se'}
-                            </button>
+                            <button onClick={() => { setIsRegister(!isRegister); }} className="text-slate-400 hover:text-white text-sm transition-colors">{isRegister ? 'Já tem conta? Faça login' : 'Não tem conta? Cadastre-se'}</button>
                         </div>
                     </div>
                 </div>
             );
         };
 
-        // --- DASHBOARD PRINCIPAL ---
         const Dashboard = ({ user }) => {
             const { addToast } = React.useContext(ToastContext);
             const [workouts, setWorkouts] = useState([]);
@@ -307,20 +291,13 @@
             const [showProfileModal, setShowProfileModal] = useState(false);
             const [hasLateWorkouts, setHasLateWorkouts] = useState(false);
             const [isConfirmingReset, setIsConfirmingReset] = useState(false);
-            
-            const [aiFormData, setAiFormData] = useState({
-                idade: '', genero: 'Masculino', peso: '', altura: '',
-                objetivo: 'Hipertrofia', experiencia: 'Iniciante',
-                frequencia: '4x', tempo: '1 hora', limitacoes: '', ciclo: 'ABC (Clássico)'
-            });
+            const [aiFormData, setAiFormData] = useState({ idade: '', genero: 'Masculino', peso: '', altura: '', objetivo: 'Hipertrofia', experiencia: 'Iniciante', frequencia: '4x', tempo: '1 hora', limitacoes: '', ciclo: 'ABC (Clássico)' });
 
-            // Lógica para detetar se há um plano ativo
             const hasActivePlan = useMemo(() => {
                 const todayStr = toDateString(new Date());
                 return workouts.some(w => w.date >= todayStr);
             }, [workouts]);
 
-            // Carregar dados
             useEffect(() => {
                 const fetchProfile = async () => {
                     try {
@@ -329,13 +306,11 @@
                     } catch (err) { console.error(err); }
                 };
                 fetchProfile();
-
                 const q = query(collection(db, 'users', user.uid, 'workouts'));
                 const unsubscribe = onSnapshot(q, (snapshot) => {
                     const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                     data.sort((a, b) => new Date(a.date) - new Date(b.date));
                     setWorkouts(data);
-                    
                     const todayStr = toDateString(new Date());
                     const late = data.some(w => w.date < todayStr && !w.completed && w.status !== 'skipped' && !w.isRestDay);
                     setHasLateWorkouts(late);
@@ -352,65 +327,36 @@
             const handleSmartReschedule = async () => {
                 const today = startOfDay(new Date());
                 const todayStr = toDateString(today);
-                
-                const pendingPast = workouts
-                    .filter(w => w.date < todayStr && !w.completed && w.status !== 'skipped' && !w.isRestDay)
-                    .sort((a, b) => new Date(a.date) - new Date(b.date));
-
-                if (pendingPast.length === 0) {
-                    addToast('Nenhum treino atrasado para reorganizar.', 'info');
-                    return;
-                }
-
+                const pendingPast = workouts.filter(w => w.date < todayStr && !w.completed && w.status !== 'skipped' && !w.isRestDay).sort((a, b) => new Date(a.date) - new Date(b.date));
+                if (pendingPast.length === 0) { addToast('Nenhum treino atrasado para reorganizar.', 'info'); return; }
                 const oldestDate = parseISO(pendingPast[0].date);
                 const daysDiff = differenceInCalendarDays(today, oldestDate);
-
                 if (daysDiff <= 0) return;
-
-                const affectedWorkouts = workouts
-                    .filter(w => w.date >= pendingPast[0].date && !w.completed && w.status !== 'skipped')
-                    .sort((a, b) => new Date(a.date) - new Date(b.date));
-
+                const affectedWorkouts = workouts.filter(w => w.date >= pendingPast[0].date && !w.completed && w.status !== 'skipped').sort((a, b) => new Date(a.date) - new Date(b.date));
                 const batchSize = 450; 
                 const batches = [];
                 let currentBatch = writeBatch(db);
                 let opCount = 0;
-
                 affectedWorkouts.forEach((w) => {
                     const originalDate = parseISO(w.date);
                     const newDate = addDays(originalDate, daysDiff);
                     const ref = doc(db, 'users', user.uid, 'workouts', w.id);
                     currentBatch.update(ref, { date: toDateString(newDate) });
                     opCount++;
-                    if (opCount >= batchSize) {
-                        batches.push(currentBatch);
-                        currentBatch = writeBatch(db);
-                        opCount = 0;
-                    }
+                    if (opCount >= batchSize) { batches.push(currentBatch); currentBatch = writeBatch(db); opCount = 0; }
                 });
                 if (opCount > 0) batches.push(currentBatch);
-
                 try {
                     await Promise.all(batches.map(b => b.commit()));
                     addToast(`Cronograma ajustado! ${affectedWorkouts.length} treinos movidos ${daysDiff} dias à frente.`, 'success');
                     setHasLateWorkouts(false);
                     setSelectedDate(new Date());
-                } catch (err) {
-                    console.error(err);
-                    addToast('Erro ao atualizar cronograma.', 'error');
-                }
+                } catch (err) { console.error(err); addToast('Erro ao atualizar cronograma.', 'error'); }
             };
 
             const toggleComplete = async (workout) => {
                 const ref = doc(db, 'users', user.uid, 'workouts', workout.id);
-                try {
-                    await setDoc(ref, { 
-                        completed: !workout.completed, 
-                        status: !workout.completed ? 'completed' : 'pending' 
-                    }, { merge: true });
-                } catch (e) {
-                    addToast('Erro ao atualizar.', 'error');
-                }
+                try { await setDoc(ref, { completed: !workout.completed, status: !workout.completed ? 'completed' : 'pending' }, { merge: true }); } catch (e) { addToast('Erro ao atualizar.', 'error'); }
             };
 
             const handleResetCycle = async () => {
@@ -418,117 +364,40 @@
                 const batch = writeBatch(db);
                 const todayStr = toDateString(new Date());
                 const futureWorkouts = workouts.filter(w => w.date >= todayStr);
-                
-                if (futureWorkouts.length === 0) {
-                     addToast('Não há treinos futuros para apagar.', 'info');
-                     setLoading(false);
-                     setIsConfirmingReset(false);
-                     return;
-                }
-
-                futureWorkouts.forEach(w => {
-                    batch.delete(doc(db, 'users', user.uid, 'workouts', w.id));
-                });
-
-                try {
-                    await batch.commit();
-                    addToast('Ciclo atual encerrado com sucesso.', 'success');
-                    setShowProfileModal(false);
-                    setIsConfirmingReset(false);
-                } catch(err) {
-                    addToast('Erro ao apagar treinos.', 'error');
-                } finally {
-                    setLoading(false);
-                }
+                if (futureWorkouts.length === 0) { addToast('Não há treinos futuros para apagar.', 'info'); setLoading(false); setIsConfirmingReset(false); return; }
+                futureWorkouts.forEach(w => { batch.delete(doc(db, 'users', user.uid, 'workouts', w.id)); });
+                try { await batch.commit(); addToast('Ciclo atual encerrado com sucesso.', 'success'); setShowProfileModal(false); setIsConfirmingReset(false); } catch(err) { addToast('Erro ao apagar treinos.', 'error'); } finally { setLoading(false); }
             };
 
             const generateTreino = async () => {
                 if (loading) return;
                 setLoading(true);
-                
                 await saveUserProfile(aiFormData);
-
-                // --- LÓGICA DE GERAÇÃO EXCLUSIVA VIA WORKER ---
                 let cycleBase = [];
-                let isAiGenerated = false;
-
                 try {
                     const controller = new AbortController();
-                    // Timeout aumentado para 30 segundos (a IA pode demorar)
                     const timeoutId = setTimeout(() => controller.abort(), 30000); 
-
-                    const res = await fetch(WORKER_URL, {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({ perfil: aiFormData, config: aiFormData }),
-                        signal: controller.signal
-                    });
-                    
+                    const res = await fetch(WORKER_URL, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ perfil: aiFormData, config: aiFormData }), signal: controller.signal });
                     clearTimeout(timeoutId);
-
                     if (res.ok) {
                        const workerData = await res.json();
-                       if (Array.isArray(workerData) && workerData.length > 0) {
-                           cycleBase = workerData; 
-                           isAiGenerated = true;
-                           addToast('Plano Profissional recebido da IA!', 'success');
-                       } else {
-                           throw new Error("Resposta da IA vazia ou inválida.");
-                       }
-                    } else {
-                        // Tentar extrair a mensagem de erro do servidor
-                        let errorMessage = `Erro no servidor: ${res.status}`;
-                        try {
-                            const errorData = await res.json();
-                            if (errorData.error) errorMessage = errorData.error;
-                        } catch (e) {
-                            const text = await res.text();
-                            if (text) errorMessage = text;
-                        }
-                        throw new Error(errorMessage);
-                    }
-                } catch (e) {
-                    console.error("Erro na geração:", e);
-                    // Mostra erro real e não usa fallback.
-                    addToast(`Erro na IA: ${e.message}. Tente novamente.`, 'error');
-                    setLoading(false);
-                    return; // Interrompe tudo.
-                }
-
-                // Se chegou aqui, temos um cycleBase válido da IA.
+                       if (Array.isArray(workerData) && workerData.length > 0) { cycleBase = workerData; addToast('Plano Profissional recebido da IA!', 'success'); } else { throw new Error("Resposta da IA vazia ou inválida."); }
+                    } else { throw new Error(`Erro no servidor: ${res.status}`); }
+                } catch (e) { console.error("Erro na geração:", e); addToast(`Erro na IA: ${e.message}. Tente novamente.`, 'error'); setLoading(false); return; }
                 const startDate = new Date();
                 const endDate = addMonths(endOfMonth(startDate), 2);
                 let plan = [];
-
                 let currentDate = startDate;
                 let cycleIndex = 0;
-                
                 while (currentDate <= endDate) {
                     const dayTemplate = cycleBase[cycleIndex % cycleBase.length];
-                    
-                    // IA já manda tudo pronto, apenas copiamos para a data correta
                     let adjustedExercises = [];
-                    if (!dayTemplate.isRest && dayTemplate.exercises) {
-                        adjustedExercises = dayTemplate.exercises.map(ex => ({
-                            name: ex.name,
-                            sets: ex.sets,
-                            reps: ex.reps
-                        }));
-                    }
-
-                    plan.push({
-                        ...dayTemplate,
-                        exercises: adjustedExercises,
-                        focus: dayTemplate.focus,
-                        dateStr: toDateString(currentDate)
-                    });
-                    
+                    if (!dayTemplate.isRest && dayTemplate.exercises) { adjustedExercises = dayTemplate.exercises.map(ex => ({ name: ex.name, sets: ex.sets, reps: ex.reps })); }
+                    plan.push({ ...dayTemplate, exercises: adjustedExercises, focus: dayTemplate.focus, dateStr: toDateString(currentDate) });
                     currentDate = addDays(currentDate, 1);
                     cycleIndex++;
                 }
-
                 try {
-                    // Limpar treinos antigos do futuro
                     const todayStr = toDateString(new Date());
                     const q = query(collection(db, 'users', user.uid, 'workouts'), where("date", ">=", todayStr));
                     const snapshot = await getDocs(q);
@@ -538,41 +407,19 @@
                     snapshot.docs.forEach(doc => { dBatch.delete(doc.ref); dCount++; if (dCount >= 450) { deleteBatches.push(dBatch); dBatch = writeBatch(db); dCount = 0; }});
                     if (dCount > 0) deleteBatches.push(dBatch);
                     await Promise.all(deleteBatches.map(b => b.commit()));
-
-                    // Inserir novo plano
                     const createBatches = [];
                     let cBatch = writeBatch(db);
                     let cCount = 0;
                     plan.forEach(day => {
                         const baseRef = collection(db, 'users', user.uid, 'workouts');
-                        if (day.isRest) {
-                            cBatch.set(doc(baseRef), {
-                                date: day.dateStr, isRestDay: true, exercise: "Descanso / Recuperação", focus: day.focus,
-                                completed: false, status: 'pending', createdAt: serverTimestamp()
-                            });
-                            cCount++;
-                        } else {
-                            day.exercises.forEach(ex => {
-                                cBatch.set(doc(baseRef), {
-                                    date: day.dateStr, exercise: ex.name, sets: ex.sets, reps: ex.reps, focus: day.focus,
-                                    completed: false, status: 'pending', isRestDay: false, createdAt: serverTimestamp()
-                                });
-                                cCount++;
-                            });
-                        }
+                        if (day.isRest) { cBatch.set(doc(baseRef), { date: day.dateStr, isRestDay: true, exercise: "Descanso / Recuperação", focus: day.focus, completed: false, status: 'pending', createdAt: serverTimestamp() }); cCount++; } else { day.exercises.forEach(ex => { cBatch.set(doc(baseRef), { date: day.dateStr, exercise: ex.name, sets: ex.sets, reps: ex.reps, focus: day.focus, completed: false, status: 'pending', isRestDay: false, createdAt: serverTimestamp() }); cCount++; }); }
                         if (cCount >= 450) { createBatches.push(cBatch); cBatch = writeBatch(db); cCount = 0; }
                     });
                     if (cCount > 0) createBatches.push(cBatch);
                     await Promise.all(createBatches.map(b => b.commit()));
-
                     addToast('Plano de 90 dias criado com sucesso!', 'success');
                     setShowAiModal(false);
-                } catch (err) {
-                    console.error("Erro na gravação:", err);
-                    addToast('Erro ao salvar o plano no banco de dados.', 'error');
-                } finally {
-                    setLoading(false);
-                }
+                } catch (err) { console.error("Erro na gravação:", err); addToast('Erro ao salvar o plano no banco de dados.', 'error'); } finally { setLoading(false); }
             };
 
             const workoutsForSelectedDate = useMemo(() => {
@@ -599,29 +446,20 @@
                                 </div>
                             </div>
                             <div className="flex gap-2">
-                                <button onClick={() => setShowProfileModal(true)} className="p-2 hover:bg-slate-800 rounded-full text-slate-400 transition-colors">
-                                    <User size={20}/>
-                                </button>
-                                <button onClick={() => auth.signOut()} className="p-2 hover:bg-slate-800 rounded-full text-slate-400 transition-colors">
-                                    <LogOut size={20}/>
-                                </button>
+                                <button onClick={() => setShowProfileModal(true)} className="p-2 hover:bg-slate-800 rounded-full text-slate-400 transition-colors"><User size={20}/></button>
+                                <button onClick={() => auth.signOut()} className="p-2 hover:bg-slate-800 rounded-full text-slate-400 transition-colors"><LogOut size={20}/></button>
                             </div>
                         </div>
                     </header>
-
                     <main className="max-w-xl mx-auto px-4 pt-24 space-y-6">
+                        
                         {!hasActivePlan && (
                             <div className="bg-gradient-to-r from-emerald-900/40 to-slate-900 border border-emerald-500/20 rounded-2xl p-6 flex flex-col sm:flex-row justify-between items-center gap-4 animate-fade-in shadow-xl shadow-emerald-900/10">
                                 <div>
-                                    <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                                        <Sparkles className="text-emerald-400" size={20}/> 
-                                        Nenhum Treino Ativo
-                                    </h2>
+                                    <h2 className="text-xl font-bold text-white flex items-center gap-2"><Sparkles className="text-emerald-400" size={20}/> Nenhum Treino Ativo</h2>
                                     <p className="text-slate-400 text-sm mt-1">Crie um novo ciclo de treinos personalizado.</p>
                                 </div>
-                                <Button onClick={() => setShowAiModal(true)} className="w-auto px-6 whitespace-nowrap bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-500/20 border-0">
-                                    <Plus size={18} className="mr-2"/> Novo Ciclo
-                                </Button>
+                                <Button onClick={() => setShowAiModal(true)} className="w-auto px-6 whitespace-nowrap bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-500/20 border-0"><Plus size={18} className="mr-2"/> Novo Ciclo</Button>
                             </div>
                         )}
 
@@ -634,9 +472,7 @@
                                         <p className="text-xs text-amber-200/70">Existem treinos pendentes no passado.</p>
                                     </div>
                                 </div>
-                                <Button variant="secondary" onClick={handleSmartReschedule} className="py-2 px-4 text-sm w-full sm:w-auto bg-amber-500/20 hover:bg-amber-500/30 border-amber-500/30 text-amber-200">
-                                    <RefreshCw size={14} className="mr-2"/> Ajustar (Empurrar Fila)
-                                </Button>
+                                <Button variant="secondary" onClick={handleSmartReschedule} className="py-2 px-4 text-sm w-full sm:w-auto bg-amber-500/20 hover:bg-amber-500/30 border-amber-500/30 text-amber-200"><RefreshCw size={14} className="mr-2"/> Ajustar (Empurrar Fila)</Button>
                             </div>
                         )}
 
@@ -646,14 +482,12 @@
                                 <h2 className="font-bold text-white capitalize">{format(selectedDate, "EEEE, d 'de' MMMM", { locale: ptBR })}</h2>
                                 <button onClick={() => setSelectedDate(addDays(selectedDate, 1))} className="p-1 hover:bg-slate-800 rounded text-slate-400"><ChevronRight size={20}/></button>
                             </div>
-                            
                             <div className="flex justify-between items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
                                 {[-3, -2, -1, 0, 1, 2, 3].map(offset => {
                                     const date = addDays(selectedDate, offset);
                                     const dateStr = toDateString(date);
                                     const isSelected = offset === 0;
                                     const dayWorkouts = workouts.filter(w => w.date === dateStr);
-                                    
                                     let indicatorColor = 'bg-slate-700';
                                     if (dayWorkouts.length > 0) {
                                         if (dayWorkouts.some(w => w.isRestDay)) indicatorColor = 'bg-blue-500';
@@ -661,11 +495,8 @@
                                         else if (date < new Date() && !dayWorkouts.every(w => w.completed)) indicatorColor = 'bg-red-500'; 
                                         else indicatorColor = 'bg-slate-500';
                                     }
-
                                     return (
-                                        <button key={offset} onClick={() => setSelectedDate(date)} 
-                                            className={`flex flex-col items-center justify-center min-w-[3rem] h-14 rounded-xl border transition-all ${isSelected ? 'bg-slate-800 border-emerald-500 text-white shadow-lg shadow-emerald-900/20' : 'bg-transparent border-transparent text-slate-500 hover:bg-slate-800/50'}`}
-                                        >
+                                        <button key={offset} onClick={() => setSelectedDate(date)} className={`flex flex-col items-center justify-center min-w-[3rem] h-14 rounded-xl border transition-all ${isSelected ? 'bg-slate-800 border-emerald-500 text-white shadow-lg shadow-emerald-900/20' : 'bg-transparent border-transparent text-slate-500 hover:bg-slate-800/50'}`}>
                                             <span className="text-[10px] font-bold uppercase">{format(date, 'EEE', { locale: ptBR })}</span>
                                             <span className="text-lg font-bold">{format(date, 'd')}</span>
                                             <div className={`w-1.5 h-1.5 rounded-full mt-1 ${indicatorColor}`}></div>
@@ -677,70 +508,36 @@
 
                         <section>
                             <div className="flex items-center justify-between mb-4">
-                                <h3 className="font-bold text-white text-lg flex items-center gap-2">
-                                    <Activity className="text-emerald-500" size={20}/> 
-                                    {dayStatus === 'rest' ? 'Dia de Descanso' : dayStatus === 'empty' ? 'Sem Treino' : 'Exercícios'}
-                                </h3>
-                                {dayStatus !== 'empty' && dayStatus !== 'rest' && (
-                                    <div className="text-xs font-bold px-2 py-1 rounded bg-slate-800 text-slate-400 border border-slate-700">
-                                        {workoutsForSelectedDate.filter(w => w.completed).length}/{workoutsForSelectedDate.length} Concluídos
-                                    </div>
-                                )}
+                                <h3 className="font-bold text-white text-lg flex items-center gap-2"><Activity className="text-emerald-500" size={20}/> {dayStatus === 'rest' ? 'Dia de Descanso' : dayStatus === 'empty' ? 'Sem Treino' : 'Exercícios'}</h3>
+                                {dayStatus !== 'empty' && dayStatus !== 'rest' && (<div className="text-xs font-bold px-2 py-1 rounded bg-slate-800 text-slate-400 border border-slate-700">{workoutsForSelectedDate.filter(w => w.completed).length}/{workoutsForSelectedDate.length} Concluídos</div>)}
                             </div>
-
                             <div className="space-y-3">
                                 {workoutsForSelectedDate.length === 0 ? (
                                     <div className="text-center py-12 border-2 border-dashed border-slate-800 rounded-2xl">
-                                        <div className="bg-slate-800/50 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
-                                            <CalendarIcon className="text-slate-500"/>
-                                        </div>
+                                        <div className="bg-slate-800/50 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3"><CalendarIcon className="text-slate-500"/></div>
                                         <p className="text-slate-400 font-medium">Nenhum treino planejado</p>
-                                        <Button variant="ghost" className="mt-2 text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10" onClick={() => setShowAiModal(true)}>
-                                            + Criar Plano
-                                        </Button>
+                                        {!hasActivePlan && (<Button variant="ghost" className="mt-2 text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10" onClick={() => setShowAiModal(true)}>+ Criar Plano</Button>)}
                                     </div>
                                 ) : dayStatus === 'rest' ? (
                                     <div className="bg-blue-500/10 border border-blue-500/20 rounded-2xl p-6 text-center animate-fade-in">
                                         <Sparkles className="h-12 w-12 text-blue-400 mx-auto mb-4 animate-pulse"/>
                                         <h3 className="text-xl font-bold text-white">Recuperação Muscular</h3>
                                         <p className="text-blue-200/70 mt-2">Aproveite para comer bem e dormir 8 horas.</p>
-                                        {!workoutsForSelectedDate[0].completed && (
-                                            <Button variant="secondary" className="mt-6 mx-auto bg-blue-500/20 hover:bg-blue-500/30 text-blue-200 border-blue-500/30 w-auto" onClick={() => toggleComplete(workoutsForSelectedDate[0])}>
-                                                Marcar Descanso Concluído
-                                            </Button>
-                                        )}
+                                        {!workoutsForSelectedDate[0].completed && (<Button variant="secondary" className="mt-6 mx-auto bg-blue-500/20 hover:bg-blue-500/30 text-blue-200 border-blue-500/30 w-auto" onClick={() => toggleComplete(workoutsForSelectedDate[0])}>Marcar Descanso Concluído</Button>)}
                                     </div>
                                 ) : (
                                     workoutsForSelectedDate.map(workout => (
-                                        <div key={workout.id} onClick={() => toggleComplete(workout)} 
-                                            className={`relative group p-4 rounded-xl border transition-all cursor-pointer flex items-center justify-between overflow-hidden ${
-                                                workout.completed 
-                                                ? 'bg-emerald-950/30 border-emerald-500/30' 
-                                                : 'bg-slate-900 border-slate-800 hover:border-slate-600'
-                                            }`}
-                                        >
+                                        <div key={workout.id} onClick={() => toggleComplete(workout)} className={`relative group p-4 rounded-xl border transition-all cursor-pointer flex items-center justify-between overflow-hidden ${workout.completed ? 'bg-emerald-950/30 border-emerald-500/30' : 'bg-slate-900 border-slate-800 hover:border-slate-600'}`}>
                                             {workout.completed && <div className="absolute inset-0 bg-emerald-500/5 pointer-events-none"></div>}
-                                            
                                             <div className="flex items-center gap-4 z-10">
-                                                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
-                                                    workout.completed ? 'bg-emerald-500 border-emerald-500' : 'border-slate-600 group-hover:border-emerald-500'
-                                                }`}>
-                                                    {workout.completed && <CheckCircle size={14} className="text-white"/>}
-                                                </div>
+                                                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${workout.completed ? 'bg-emerald-500 border-emerald-500' : 'border-slate-600 group-hover:border-emerald-500'}`}>{workout.completed && <CheckCircle size={14} className="text-white"/>}</div>
                                                 <div>
-                                                    <h4 className={`font-bold text-base ${workout.completed ? 'text-slate-500 line-through decoration-emerald-500/50' : 'text-slate-200'}`}>
-                                                        {workout.exercise}
-                                                    </h4>
+                                                    <h4 className={`font-bold text-base ${workout.completed ? 'text-slate-500 line-through decoration-emerald-500/50' : 'text-slate-200'}`}>{workout.exercise}</h4>
                                                     <div className="flex items-center gap-3 text-xs text-slate-500 mt-1">
                                                         <span className="flex items-center gap-1"><span className="text-emerald-500 font-bold">{workout.sets}</span> Séries</span>
                                                         <span className="w-1 h-1 rounded-full bg-slate-700"></span>
                                                         <span className="flex items-center gap-1"><span className="text-emerald-500 font-bold">{workout.reps}</span> Reps</span>
-                                                        {workout.focus && (
-                                                            <>
-                                                                <span className="w-1 h-1 rounded-full bg-slate-700"></span>
-                                                                <span className="uppercase tracking-wider text-[10px]">{workout.focus.split(':')[0]}</span>
-                                                            </>
-                                                        )}
+                                                        {workout.focus && (<><span className="w-1 h-1 rounded-full bg-slate-700"></span><span className="uppercase tracking-wider text-[10px]">{workout.focus.split(':')[0]}</span></>)}
                                                     </div>
                                                 </div>
                                             </div>
@@ -751,30 +548,12 @@
                         </section>
                     </main>
 
-                    <button onClick={() => setShowAiModal(true)} className="fixed bottom-6 right-6 w-14 h-14 bg-emerald-500 hover:bg-emerald-400 text-white rounded-full shadow-lg shadow-emerald-900/50 flex items-center justify-center transition-transform hover:scale-105 active:scale-95 z-40">
-                        <Plus size={28}/>
-                    </button>
-
                     {showAiModal && (
                         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in">
                             <div className="bg-slate-900 w-full max-w-lg rounded-3xl border border-slate-700 max-h-[90vh] flex flex-col animate-slide-up">
-                                <div className="p-6 border-b border-slate-800 flex justify-between items-center">
-                                    <h3 className="text-xl font-bold text-white flex items-center gap-2"><Sparkles className="text-purple-400"/> Gerar Treino</h3>
-                                    <button onClick={() => setShowAiModal(false)}><X className="text-slate-400"/></button>
-                                </div>
-                                <div className="p-6 overflow-y-auto space-y-6">
-                                    <ProfileFormContent formData={aiFormData} setFormData={setAiFormData} />
-                                    <div className="bg-purple-900/10 p-4 rounded-xl border border-purple-500/20">
-                                        <p className="text-xs text-purple-200/70 text-center">
-                                            A IA (via Cloudflare) vai gerar um plano de 3 meses baseado nestes dados. Treinos futuros existentes serão substituídos.
-                                        </p>
-                                    </div>
-                                </div>
-                                <div className="p-6 border-t border-slate-800">
-                                    <Button onClick={generateTreino} loading={loading} className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 shadow-purple-900/40">
-                                        <Sparkles size={18}/> Gerar Plano Trimestral
-                                    </Button>
-                                </div>
+                                <div className="p-6 border-b border-slate-800 flex justify-between items-center"><h3 className="text-xl font-bold text-white flex items-center gap-2"><Sparkles className="text-purple-400"/> Gerar Treino</h3><button onClick={() => setShowAiModal(false)}><X className="text-slate-400"/></button></div>
+                                <div className="p-6 overflow-y-auto space-y-6"><ProfileFormContent formData={aiFormData} setFormData={setAiFormData} /><div className="bg-purple-900/10 p-4 rounded-xl border border-purple-500/20"><p className="text-xs text-purple-200/70 text-center">A IA (via Cloudflare) vai gerar um plano de 3 meses baseado nestes dados. Treinos futuros existentes serão substituídos.</p></div></div>
+                                <div className="p-6 border-t border-slate-800"><Button onClick={generateTreino} loading={loading} className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 shadow-purple-900/40"><Sparkles size={18}/> Gerar Plano Trimestral</Button></div>
                             </div>
                         </div>
                     )}
@@ -782,37 +561,13 @@
                     {showProfileModal && (
                         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in">
                             <div className="bg-slate-900 w-full max-w-lg rounded-3xl border border-slate-700 max-h-[90vh] flex flex-col animate-slide-up">
-                                <div className="p-6 border-b border-slate-800 flex justify-between items-center">
-                                    <h3 className="text-xl font-bold text-white flex items-center gap-2"><User className="text-emerald-500"/> Meu Perfil</h3>
-                                    <button onClick={() => setShowProfileModal(false)}><X className="text-slate-400"/></button>
-                                </div>
-                                <div className="p-6 overflow-y-auto space-y-6">
-                                    <ProfileFormContent formData={aiFormData} setFormData={setAiFormData} />
-                                </div>
+                                <div className="p-6 border-b border-slate-800 flex justify-between items-center"><h3 className="text-xl font-bold text-white flex items-center gap-2"><User className="text-emerald-500"/> Meu Perfil</h3><button onClick={() => setShowProfileModal(false)}><X className="text-slate-400"/></button></div>
+                                <div className="p-6 overflow-y-auto space-y-6"><ProfileFormContent formData={aiFormData} setFormData={setAiFormData} /></div>
                                 <div className="p-6 border-t border-slate-800 flex flex-col gap-3">
-                                    <Button onClick={async () => { 
-                                        setLoading(true); 
-                                        await saveUserProfile(aiFormData); 
-                                        setLoading(false); 
-                                        setShowProfileModal(false); 
-                                        addToast('Perfil salvo!', 'success'); 
-                                    }} loading={loading} variant="primary">
-                                        <Save size={18}/> Salvar Alterações
-                                    </Button>
-
+                                    <Button onClick={async () => { setLoading(true); await saveUserProfile(aiFormData); setLoading(false); setShowProfileModal(false); addToast('Perfil salvo!', 'success'); }} loading={loading} variant="primary"><Save size={18}/> Salvar Alterações</Button>
                                     <div className="mt-4 pt-4 border-t border-slate-800">
-                                        {!isConfirmingReset ? (
-                                            <button onClick={() => setIsConfirmingReset(true)} className="w-full text-red-400 text-xs font-bold hover:text-red-300 transition-colors flex items-center justify-center gap-2 py-2">
-                                                <Trash2 size={14}/> Encerrar Ciclo Atual (Apagar Futuros)
-                                            </button>
-                                        ) : (
-                                            <div className="bg-red-900/10 p-3 rounded-lg border border-red-500/20 text-center animate-fade-in">
-                                                <p className="text-xs text-red-300 mb-3 font-bold">Tem certeza? Isso apagará todos os treinos futuros.</p>
-                                                <div className="flex gap-2">
-                                                    <Button variant="danger" onClick={handleResetCycle} loading={loading} className="py-2 text-xs">Sim, Apagar</Button>
-                                                    <Button variant="secondary" onClick={() => setIsConfirmingReset(false)} className="py-2 text-xs">Cancelar</Button>
-                                                </div>
-                                            </div>
+                                        {!isConfirmingReset ? (<button onClick={() => setIsConfirmingReset(true)} className="w-full text-red-400 text-xs font-bold hover:text-red-300 transition-colors flex items-center justify-center gap-2 py-2"><Trash2 size={14}/> Encerrar Ciclo Atual (Apagar Futuros)</button>) : (
+                                            <div className="bg-red-900/10 p-3 rounded-lg border border-red-500/20 text-center animate-fade-in"><p className="text-xs text-red-300 mb-3 font-bold">Tem certeza? Isso apagará todos os treinos futuros.</p><div className="flex gap-2"><Button variant="danger" onClick={handleResetCycle} loading={loading} className="py-2 text-xs">Sim, Apagar</Button><Button variant="secondary" onClick={() => setIsConfirmingReset(false)} className="py-2 text-xs">Cancelar</Button></div></div>
                                         )}
                                     </div>
                                 </div>
@@ -826,22 +581,9 @@
         const App = () => {
             const [user, setUser] = useState(null);
             const [loading, setLoading] = useState(true);
-
-            useEffect(() => {
-                const unsub = onAuthStateChanged(auth, (u) => {
-                    setUser(u);
-                    setLoading(false);
-                });
-                return () => unsub();
-            }, []);
-
+            useEffect(() => { const unsub = onAuthStateChanged(auth, (u) => { setUser(u); setLoading(false); }); return () => unsub(); }, []);
             if (loading) return <div className="min-h-screen bg-slate-950 flex items-center justify-center"><div className="w-8 h-8 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin"></div></div>;
-
-            return (
-                <ToastProvider>
-                    {user ? <Dashboard user={user} /> : <AuthScreen />}
-                </ToastProvider>
-            );
+            return <ToastProvider>{user ? <Dashboard user={user} /> : <AuthScreen />}</ToastProvider>;
         };
 
         createRoot(document.getElementById('root')).render(<App />);
